@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-
-// In-memory storage (temporary - will be replaced with database)
-let crews: Array<{
-  id: string;
-  name: string;
-  description: string;
-  agents: string[];
-  workflowType: 'sequential' | 'parallel' | 'conditional';
-  status: 'idle' | 'running' | 'completed' | 'failed';
-  lastRun?: string;
-  createdAt: string;
-  updatedAt: string;
-}> = [];
+import { crewQueries } from '@/lib/db/queries';
 
 export async function GET() {
-  return NextResponse.json(crews);
+  return NextResponse.json(crewQueries.getAll());
 }
 
 export async function POST(request: NextRequest) {
@@ -32,6 +20,6 @@ export async function POST(request: NextRequest) {
     updatedAt: new Date().toISOString(),
   };
 
-  crews.push(crew);
-  return NextResponse.json(crew, { status: 201 });
+  const created = crewQueries.create(crew);
+  return NextResponse.json(created, { status: 201 });
 }

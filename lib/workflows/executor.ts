@@ -5,6 +5,7 @@ import type {
   WorkflowExecutionResult,
   WorkflowContext,
   ExecutorOptions,
+  WorkflowStepCallback,
 } from './types';
 
 export class WorkflowExecutor {
@@ -30,19 +31,29 @@ export class WorkflowExecutor {
     workflow: WorkflowDefinition,
     initialInput: string
   ): Promise<WorkflowExecutionResult> {
+    return this.executeWithCallbacks(crewId, crewName, workflow, initialInput);
+  }
+
+  async executeWithCallbacks(
+    crewId: string,
+    crewName: string,
+    workflow: WorkflowDefinition,
+    initialInput: string,
+    onStep?: WorkflowStepCallback
+  ): Promise<WorkflowExecutionResult> {
     const startTime = new Date();
     const results: WorkflowStepResult[] = [];
 
     try {
       switch (workflow.type) {
         case 'sequential':
-          await this.executeSequential(workflow, initialInput, results);
+          await this.executeSequential(workflow, initialInput, results, onStep);
           break;
         case 'parallel':
-          await this.executeParallel(workflow, initialInput, results);
+          await this.executeParallel(workflow, initialInput, results, onStep);
           break;
         case 'conditional':
-          await this.executeConditional(workflow, initialInput, results);
+          await this.executeConditional(workflow, initialInput, results, onStep);
           break;
         default:
           throw new Error(`Unknown workflow type: ${workflow.type}`);
@@ -85,7 +96,8 @@ export class WorkflowExecutor {
   private async executeSequential(
     workflow: WorkflowDefinition,
     initialInput: string,
-    results: WorkflowStepResult[]
+    results: WorkflowStepResult[],
+    onStep?: WorkflowStepCallback
   ): Promise<void> {
     let currentInput = initialInput;
 
@@ -95,6 +107,7 @@ export class WorkflowExecutor {
 
       const result = await this.executeStep(i, step.agentId, input);
       results.push(result);
+      onStep?.(result);
 
       if (!result.success) {
         throw new Error(`Step ${i + 1} failed: ${result.error}`);
@@ -112,7 +125,8 @@ export class WorkflowExecutor {
   private async executeParallel(
     workflow: WorkflowDefinition,
     initialInput: string,
-    results: WorkflowStepResult[]
+    results: WorkflowStepResult[],
+    onStep?: WorkflowStepCallback
   ): Promise<void> {
     const promises = workflow.steps.map((step, index) => {
       const input = step.input || initialInput;
@@ -127,6 +141,7 @@ export class WorkflowExecutor {
       if (settledResult.status === 'fulfilled') {
         results.push(settledResult.value);
         this.context.previousResults.push(settledResult.value);
+        onStep?.(settledResult.value);
       } else {
         // Create error result for rejected promise
         const errorResult: WorkflowStepResult = {
@@ -142,6 +157,7 @@ export class WorkflowExecutor {
           duration: 0,
         };
         results.push(errorResult);
+        onStep?.(errorResult);
       }
     }
 
@@ -160,7 +176,8 @@ export class WorkflowExecutor {
   private async executeConditional(
     workflow: WorkflowDefinition,
     initialInput: string,
-    results: WorkflowStepResult[]
+    results: WorkflowStepResult[],
+    onStep?: WorkflowStepCallback
   ): Promise<void> {
     let currentInput = initialInput;
 
@@ -179,6 +196,7 @@ export class WorkflowExecutor {
       const input = step.input || currentInput;
       const result = await this.executeStep(i, step.agentId, input);
       results.push(result);
+      onStep?.(result);
 
       // Update context for next steps
       currentInput = result.output;

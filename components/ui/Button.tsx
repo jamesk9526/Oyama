@@ -15,16 +15,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={clsx(
           // Base styles
           'inline-flex items-center justify-center rounded-md font-medium transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+          'border border-transparent shadow-none',
+          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0',
           'disabled:opacity-50 disabled:pointer-events-none',
           
           // Variants
           {
             'bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary':
               variant === 'primary',
-            'bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:ring-secondary':
+            'bg-secondary text-secondary-foreground border-border/60 hover:bg-secondary/80 focus-visible:ring-secondary':
               variant === 'secondary',
-            'hover:bg-accent hover:text-accent-foreground focus-visible:ring-accent':
+            'bg-transparent text-foreground hover:bg-accent/60 hover:text-accent-foreground focus-visible:ring-accent':
               variant === 'ghost',
             'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive':
               variant === 'destructive',

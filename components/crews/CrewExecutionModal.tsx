@@ -34,6 +34,9 @@ export function CrewExecutionModal({
   const [input, setInput] = useState('');
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<WorkflowExecutionResult | null>(null);
+  const [steps, setSteps] = useState<WorkflowStepResult[]>([]);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [rounds, setRounds] = useState(1);
   const [error, setError] = useState('');
 
   const handleExecute = async () => {
@@ -45,6 +48,8 @@ export function CrewExecutionModal({
     setExecuting(true);
     setError('');
     setResult(null);
+    setSteps([]);
+    setRunId(null);
 
     try {
       // Build workflow definition from crew
@@ -55,7 +60,7 @@ export function CrewExecutionModal({
         })),
       };
 
-      const response = await fetch('/api/workflows/execute', {
+      const response = await fetch('/api/crews/runs/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,6 +68,7 @@ export function CrewExecutionModal({
           crewName: crew.name,
           workflow,
           input: input.trim(),
+          rounds,
           options: {
             ollamaUrl,
             model,
@@ -79,18 +85,90 @@ export function CrewExecutionModal({
         throw new Error(errorData.error || 'Workflow execution failed');
       }
 
-      const executionResult = await response.json();
-      setResult(executionResult);
+      if (!response.body) {
+        throw new Error('Streaming response not available');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let liveSteps: WorkflowStepResult[] = [];
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+
+        for (const part of parts) {
+          const lines = part.split('\n').filter(Boolean);
+          let event = 'message';
+          let data = '';
+          for (const line of lines) {
+            if (line.startsWith('event:')) {
+              event = line.replace('event:', '').trim();
+            } else if (line.startsWith('data:')) {
+              data += line.replace('data:', '').trim();
+            }
+          }
+
+          if (!data) continue;
+
+          const parsed = JSON.parse(data);
+          if (event === 'run') {
+            setRunId(parsed.runId || null);
+          }
+
+          if (event === 'step') {
+            const step = parsed.step as WorkflowStepResult;
+            setSteps((prev) => {
+              const existing = prev.find((s) => s.stepIndex === step.stepIndex);
+              if (existing) {
+                liveSteps = prev.map((s) => (s.stepIndex === step.stepIndex ? step : s));
+                return liveSteps;
+              }
+              liveSteps = [...prev, step].sort((a, b) => a.stepIndex - b.stepIndex);
+              return liveSteps;
+            });
+          }
+
+          if (event === 'complete') {
+            setResult({
+              crewId: crew.id,
+              crewName: crew.name,
+              workflowType: crew.workflowType,
+              steps: liveSteps,
+              success: parsed.success,
+              totalDuration: parsed.totalDuration || 0,
+              startTime: new Date(),
+              endTime: new Date(),
+              error: parsed.error,
+            });
+            setExecuting(false);
+          }
+
+          if (event === 'error') {
+            setError(parsed.error || 'Workflow execution failed');
+            setExecuting(false);
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
       setExecuting(false);
+    } finally {
+      // Streaming handlers control executing state
     }
   };
 
   const handleReset = () => {
     setInput('');
     setResult(null);
+    setSteps([]);
+    setRunId(null);
+    setRounds(1);
     setError('');
   };
 
@@ -109,22 +187,41 @@ export function CrewExecutionModal({
       <div className="space-y-4">
         {/* Input Section */}
         {!result && (
-          <div>
-            <Label htmlFor="workflow-input" className="mb-2 block">
-              Input Message
-            </Label>
-            <Textarea
-              id="workflow-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Enter the task or question for the crew to process..."
-              rows={4}
-              disabled={executing}
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              This will be processed by {crew.agents.length} agent(s) in {crew.workflowType} mode
-            </p>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="workflow-input" className="mb-2 block">
+                Input Message
+              </Label>
+              <Textarea
+                id="workflow-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Enter the task or question for the crew to process..."
+                rows={4}
+                disabled={executing}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This will be processed by {crew.agents.length} agent(s) in {crew.workflowType} mode
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="workflow-rounds" className="mb-2 block">
+                Rounds (Round Robin)
+              </Label>
+              <Input
+                id="workflow-rounds"
+                type="number"
+                min={1}
+                max={20}
+                value={rounds}
+                onChange={(e) => setRounds(Number(e.target.value) || 1)}
+                disabled={executing || crew.workflowType !== 'sequential'}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Only applies to sequential workflows.
+              </p>
+            </div>
           </div>
         )}
 
@@ -150,14 +247,15 @@ export function CrewExecutionModal({
         )}
 
         {/* Results Display */}
-        {result && (
+        {(result || steps.length > 0) && (
           <div className="space-y-3">
             {/* Summary */}
-            <div className={`rounded-lg p-3 border ${
-              result.success
-                ? 'bg-green-500/10 border-green-500/20'
-                : 'bg-destructive/10 border-destructive/20'
-            }`}>
+            {result && (
+              <div className={`rounded-lg p-3 border ${
+                result.success
+                  ? 'bg-green-500/10 border-green-500/20'
+                  : 'bg-destructive/10 border-destructive/20'
+              }`}>
               <div className="flex items-center gap-2 mb-1">
                 {result.success ? (
                   <CheckCircle className="w-5 h-5 text-green-500" />
@@ -175,15 +273,16 @@ export function CrewExecutionModal({
                 </span>
                 <span>{result.steps.length} steps executed</span>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Step Results */}
             <div className="space-y-2">
               <Label className="text-sm">Step Results</Label>
-              {result.steps.map((step, index) => (
+              {(result?.steps.length ? result.steps : steps).map((step, index) => (
                 <div
                   key={index}
-                  className="border border-border rounded-lg p-3 space-y-2"
+                  className="border border-border/60 rounded-lg p-3 space-y-2 bg-background/60"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -241,6 +340,14 @@ export function CrewExecutionModal({
               <Button variant="secondary" onClick={handleReset}>
                 Run Again
               </Button>
+              {runId && (
+                <Button
+                  variant="secondary"
+                  onClick={() => window.open(`/crews/runs?runId=${runId}`, '_blank')}
+                >
+                  View Run
+                </Button>
+              )}
               <Button onClick={onClose}>Close</Button>
             </>
           ) : (

@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 let db: Database.Database | null = null;
+let isInitialized = false;
 
 export function getDatabase(): Database.Database {
   if (db) {
@@ -33,6 +34,16 @@ export function getDatabase(): Database.Database {
   // Enable foreign keys
   db.pragma('foreign_keys = ON');
   
+  // Auto-initialize database tables if not already done
+  if (!isInitialized) {
+    try {
+      initializeTables(db);
+      isInitialized = true;
+    } catch (error) {
+      console.error('Error initializing database tables:', error);
+    }
+  }
+  
   return db;
 }
 
@@ -43,9 +54,16 @@ export function closeDatabase(): void {
   }
 }
 
-export function initializeDatabase(): void {
-  const db = getDatabase();
+function ensureColumn(db: Database.Database, table: string, column: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  const hasColumn = columns.some((col) => col.name === column);
 
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+function initializeTables(db: Database.Database): void {
   // Agents table
   db.exec(`
     CREATE TABLE IF NOT EXISTS agents (
@@ -102,6 +120,10 @@ export function initializeDatabase(): void {
     )
   `);
 
+  // Migrations for existing databases
+  ensureColumn(db, 'chats', 'agentId', 'TEXT');
+  ensureColumn(db, 'chats', 'model', 'TEXT');
+
   // Messages table (individual messages within chats)
   db.exec(`
     CREATE TABLE IF NOT EXISTS messages (
@@ -114,6 +136,21 @@ export function initializeDatabase(): void {
     )
   `);
 
+  // Memory table (for long-term context retention)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS memories (
+      id TEXT PRIMARY KEY,
+      chatId TEXT,
+      content TEXT NOT NULL,
+      type TEXT DEFAULT 'fact',
+      importance INTEGER DEFAULT 5,
+      keywords TEXT,
+      createdAt TEXT NOT NULL,
+      lastAccessedAt TEXT,
+      accessCount INTEGER DEFAULT 0
+    )
+  `);
+
   // Settings table
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -122,5 +159,61 @@ export function initializeDatabase(): void {
     )
   `);
 
-  console.log('Database initialized successfully');
+  // Attachments table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS attachments (
+      id TEXT PRIMARY KEY,
+      scopeType TEXT NOT NULL,
+      scopeId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      mime TEXT,
+      size INTEGER,
+      createdAt TEXT NOT NULL
+    )
+  `);
+
+  // Crew runs table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crew_runs (
+      id TEXT PRIMARY KEY,
+      crewId TEXT NOT NULL,
+      crewName TEXT NOT NULL,
+      workflowType TEXT NOT NULL,
+      input TEXT NOT NULL,
+      status TEXT NOT NULL,
+      model TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      temperature REAL,
+      topP REAL,
+      maxTokens INTEGER,
+      startedAt TEXT NOT NULL,
+      completedAt TEXT,
+      error TEXT
+    )
+  `);
+
+  // Crew run steps table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crew_run_steps (
+      id TEXT PRIMARY KEY,
+      runId TEXT NOT NULL,
+      stepIndex INTEGER NOT NULL,
+      agentId TEXT NOT NULL,
+      agentName TEXT NOT NULL,
+      input TEXT NOT NULL,
+      output TEXT,
+      success INTEGER NOT NULL,
+      error TEXT,
+      duration INTEGER NOT NULL,
+      createdAt TEXT NOT NULL
+    )
+  `);
+
+  console.log('Database tables initialized successfully');
+}
+
+export function initializeDatabase(): void {
+  const db = getDatabase();
+  initializeTables(db);
 }

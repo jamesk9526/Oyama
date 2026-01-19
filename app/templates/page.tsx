@@ -9,8 +9,11 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Plus, Search, Star, FileText } from 'lucide-react';
 import { useTemplatesStore } from '@/lib/stores/templates';
+import { TemplateEngine } from '@/lib/templates/engine';
+import { useRouter } from 'next/navigation';
 
 export default function TemplatesPage() {
+  const router = useRouter();
   const { templates, loading, fetchTemplates, createTemplate, updateTemplate, deleteTemplate, toggleFavorite } = useTemplatesStore();
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,25 +74,26 @@ export default function TemplatesPage() {
   };
 
   const handleTest = (template: Template) => {
-    // TODO: Open test modal
-    console.log('Test template:', template.id);
+    const previewBody = TemplateEngine.preview(template);
+    sessionStorage.setItem(
+      'oyama:template-test',
+      JSON.stringify({
+        body: previewBody,
+        systemAdditions: template.systemAdditions || '',
+        name: template.name,
+      })
+    );
+    router.push('/chats?newChat=1&templateTest=1');
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="border-b border-border bg-background p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">Template Library</h1>
-            <p className="text-sm text-muted-foreground">
-              Reusable prompt templates with variables
-            </p>
-          </div>
-          <Button onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">New Template</span>
-            <span className="sm:hidden">New</span>
+      <div className="border-b border-border/60 bg-background/80 backdrop-blur p-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h1 className="text-xl font-semibold tracking-tight">Templates <span className="text-sm text-muted-foreground font-normal">({templates.length})</span></h1>
+          <Button size="sm" onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
+            <Plus className="w-3.5 h-3.5" />
           </Button>
         </div>
 
@@ -108,6 +112,8 @@ export default function TemplatesPage() {
             variant={showFavoritesOnly ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            title="Toggle favorites"
+            aria-label="Toggle favorites"
           >
             <Star className={showFavoritesOnly ? 'fill-current' : ''} />
           </Button>
@@ -144,7 +150,7 @@ export default function TemplatesPage() {
       </div>
 
       {/* Templates grid */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">Loading templates...</p>

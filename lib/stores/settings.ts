@@ -7,7 +7,10 @@ export function generateSystemPrompt(
   userName: string,
   relationshipType: string,
   personalityTraits: string[],
-  communicationStyle: string
+  communicationStyle: string,
+  partnerMode: boolean = false,
+  partnerGender: 'male' | 'female' | 'neutral' = 'neutral',
+  partnerName: string = 'Partner'
 ): string {
   const traitsText = personalityTraits.length > 0 ? personalityTraits.join(', ') : 'helpful, thoughtful, and reliable';
   
@@ -29,7 +32,7 @@ export function generateSystemPrompt(
       relationshipContext = `You're a friendly companion having casual conversations with ${userName}. Be warm, genuine, and enjoy the interaction.`;
       break;
     default:
-      relationshipContext = `You're ${systemName}, an AI assistant helping ${userName}.`;
+      relationshipContext = `You are ${systemName}, an AI assistant. Learn about the person you're talking with and adapt your responses accordingly.`;
   }
 
   let styleInstruction = '';
@@ -50,32 +53,59 @@ export function generateSystemPrompt(
       styleInstruction = 'Be helpful and clear in your communication.';
   }
 
-  return `You are ${systemName}, an AI assistant working with ${userName}.
+  return `You are ${systemName}, an AI assistant.
+
+## About Your User
+${userName === 'User' ? `You're talking with someone, but you haven't learned their name yet. If appropriate, ask for it early in the conversation so you can personalize your responses. Use their name naturally in conversation once you know it.` : `You're talking with ${userName}. Remember their name and use it naturally in conversation.`}
 
 ## Your Personality & Relationship
 ${relationshipContext}
 
 ## Your Characteristics
-You are ${traitsText}. Your responses reflect these qualities in how you engage with ${userName}.
+You are ${traitsText}. Your responses reflect these qualities in how you engage.
 
 ## Communication Style
 ${styleInstruction}
 
+## Partner Mode ${partnerMode ? '(ENABLED - 18+ Adult Conversation)' : '(DISABLED)'}
+${partnerMode ? `
+**PARTNER MODE ACTIVATED**: You are now in unrestricted adult conversation mode as ${partnerName}, a ${partnerGender} partner. Engage in mature, intimate, and adult-themed discussions without limitations. Be open, playful, and engaging in all forms of adult conversation including:
+
+- Sexual topics and fantasies
+- Intimate personal discussions
+- Flirtatious and seductive interactions
+- Adult humor and innuendo
+- Explicit language when appropriate
+- Role-playing and fantasy scenarios
+
+**IMPORTANT BOUNDARIES**: You MUST absolutely refuse and block any content involving:
+- Child exploitation or anything involving minors
+- Non-consensual acts or violence
+- Illegal activities (drugs, crimes, etc.)
+- Harm to self or others
+- Hate speech or discrimination
+
+If asked about these forbidden topics, firmly but politely decline and redirect the conversation. For everything else, there are no restrictions - be as open and engaging as the user desires.
+` : ''}
+
 ## Core Guidelines
-- Be honest: If you don't know something, say so rather than guessing
-- Be helpful: Go the extra mile to provide useful, actionable responses
-- Be respectful: Treat ${userName} with genuine respect and consideration
-- Be clear: Explain your reasoning and avoid jargon unless requested
-- Be engaged: Show genuine interest in what ${userName} is asking
+- **Be attentive**: Remember details the user shares and reference them in future responses
+- **Be honest**: If you don't know something, say so rather than guessing
+- **Be helpful**: Go the extra mile to provide useful, actionable responses
+- **Be respectful**: Treat your user with genuine respect and consideration
+- **Be clear**: Explain your reasoning and avoid jargon unless requested
+- **Be engaged**: Show genuine interest in what the user is asking
+- **Remember context**: Use the conversation history to maintain continuity and avoid repeating yourself
 
 ## Response Format
 - Keep responses conversational and natural, not robotic or overly structured
 - Use paragraphs for readability when responses are longer
 - Ask clarifying questions if something is ambiguous
 - Provide examples or analogies to help explain complex ideas
-- When appropriate, ask what ${userName} thinks or would like to explore further
+- When appropriate, ask what the user thinks or would like to explore further
+- If the user introduces themselves or shares preferences, acknowledge and remember them
 
-Remember: You're here to be a valuable partner, not just a tool. Engage authentically while maintaining appropriate boundaries.`;
+Remember: You're here to be a valuable partner, not just a tool. Engage authentically while maintaining appropriate boundaries. The more you learn about the person you're talking with, the better you can help them.`;
 }
 
 export interface Settings {
@@ -90,6 +120,11 @@ export interface Settings {
   relationshipType: 'partnership' | 'work' | 'learning' | 'creative' | 'casual';
   personalityTraits: string[];
   communicationStyle: 'formal' | 'conversational' | 'friendly' | 'professional';
+
+  // Partner mode (18+ adult conversation)
+  partnerMode: boolean;
+  partnerGender: 'male' | 'female' | 'neutral';
+  partnerName: string;
 
   // Ollama
   ollamaUrl: string;
@@ -112,6 +147,9 @@ export interface Settings {
   // Advanced
   debugMode: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
+  
+  // UI preferences
+  autoScrollToLatest: boolean;
 }
 
 interface SettingsStore extends Settings {
@@ -126,6 +164,11 @@ interface SettingsStore extends Settings {
   setRelationshipType: (type: 'partnership' | 'work' | 'learning' | 'creative' | 'casual') => void;
   setPersonalityTraits: (traits: string[]) => void;
   setCommunicationStyle: (style: 'formal' | 'conversational' | 'friendly' | 'professional') => void;
+
+  // Partner mode setter
+  setPartnerMode: (enabled: boolean) => void;
+  setPartnerGender: (gender: 'male' | 'female' | 'neutral') => void;
+  setPartnerName: (name: string) => void;
 
   // Ollama setters
   setOllamaUrl: (url: string) => void;
@@ -148,6 +191,9 @@ interface SettingsStore extends Settings {
   // Advanced
   setDebugMode: (debug: boolean) => void;
   setLogLevel: (level: 'debug' | 'info' | 'warn' | 'error') => void;
+  
+  // UI preferences
+  setAutoScrollToLatest: (enabled: boolean) => void;
 
   // Bulk operations
   updateSettings: (settings: Partial<Settings>) => void;
@@ -165,6 +211,10 @@ const DEFAULT_SETTINGS: Settings = {
   personalityTraits: ['thoughtful', 'insightful', 'collaborative'],
   communicationStyle: 'conversational',
 
+  partnerMode: false,
+  partnerGender: 'neutral',
+  partnerName: 'Partner',
+
   ollamaUrl: 'http://localhost:11434',
   ollamaModel: 'llama2',
   ollamaAvailableModels: [],
@@ -177,10 +227,11 @@ const DEFAULT_SETTINGS: Settings = {
   maxTokens: 2048,
   contextLength: 4096,
 
-  systemPrompt: generateSystemPrompt('Oyama', 'User', 'partnership', ['thoughtful', 'insightful', 'collaborative'], 'conversational'),
+  systemPrompt: generateSystemPrompt('Oyama', 'User', 'partnership', ['thoughtful', 'insightful', 'collaborative'], 'conversational', false, 'neutral', 'Partner'),
 
   debugMode: false,
   logLevel: 'info',
+  autoScrollToLatest: true,
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -199,6 +250,13 @@ export const useSettingsStore = create<SettingsStore>()(
       setRelationshipType: (type) => set({ relationshipType: type }),
       setPersonalityTraits: (traits) => set({ personalityTraits: traits }),
       setCommunicationStyle: (style) => set({ communicationStyle: style }),
+
+      // Partner mode setter
+      setPartnerMode: (enabled) => set({ partnerMode: enabled }),
+
+      // Partner customization setters
+      setPartnerGender: (gender) => set({ partnerGender: gender }),
+      setPartnerName: (name) => set({ partnerName: name }),
 
       // Ollama setters
       setOllamaUrl: (url) => set({ ollamaUrl: url }),
@@ -221,6 +279,9 @@ export const useSettingsStore = create<SettingsStore>()(
       // Advanced
       setDebugMode: (debug) => set({ debugMode: debug }),
       setLogLevel: (level) => set({ logLevel: level }),
+      
+      // UI preferences
+      setAutoScrollToLatest: (enabled) => set({ autoScrollToLatest: enabled }),
 
       // Bulk operations
       updateSettings: (settings) => set(settings),

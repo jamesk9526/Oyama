@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowExecutor } from '@/lib/workflows/executor';
-import { agentQueries } from '@/lib/db/queries';
+import { agentQueries, attachmentQueries } from '@/lib/db/queries';
+import fs from 'fs';
+import path from 'path';
 import type { WorkflowDefinition } from '@/lib/workflows/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { crewId, crewName, workflow, input, options } = body;
+    const { crewId, crewName, workflow, input, options, attachmentIds = [], rounds = 1 } = body;
 
     // Validate required fields
     if (!crewId || !crewName || !workflow || !input || !options) {
@@ -49,12 +51,49 @@ export async function POST(request: NextRequest) {
     }
 
     // Create executor and run workflow
+    let attachments: { name: string; path: string }[] = [];
+    if (attachmentIds.length > 0) {
+      attachments = attachmentQueries.getByIds(attachmentIds);
+    } else {
+      attachments = attachmentQueries.getByScope('crew', crewId);
+    }
+
+    const attachmentContext = attachments
+      .map((attachment) => {
+        const absolutePath = path.join(process.cwd(), '.data', attachment.path);
+        let content = '';
+        try {
+          content = fs.readFileSync(absolutePath, 'utf-8');
+        } catch {
+          content = '[Unable to read file]';
+        }
+        const maxCharsPerFile = 6000;
+        const clipped = content.length > maxCharsPerFile
+          ? `${content.slice(0, maxCharsPerFile)}\n...[truncated]`
+          : content;
+        return `File: ${attachment.name}\n${clipped}`;
+      })
+      .join('\n\n');
+
+    const enrichedInput = attachmentContext
+      ? `${input}\n\nAttached Files:\n${attachmentContext}`
+      : input;
+
+    const normalizedRounds = Number.isFinite(rounds) && rounds > 0 ? Math.min(rounds, 20) : 1;
+    const expandedWorkflow: WorkflowDefinition = {
+      ...workflow,
+      steps:
+        workflow.type === 'sequential'
+          ? Array.from({ length: normalizedRounds }).flatMap(() => workflow.steps)
+          : workflow.steps,
+    };
+
     const executor = new WorkflowExecutor(agents, options);
     const result = await executor.execute(
       crewId,
       crewName,
-      workflow as WorkflowDefinition,
-      input
+      expandedWorkflow,
+      enrichedInput
     );
 
     return NextResponse.json(result);

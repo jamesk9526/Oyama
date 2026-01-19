@@ -343,11 +343,11 @@ None - All Sprint 2 priority features complete!
      - [x] Search through command labels, descriptions, keywords
 
 6. **Prompt Composition Engine** (`lib/prompts/composer.ts`)
-   - [ ] Prompt variable interpolation
-   - [ ] System prompt hierarchy (Global → Workspace → Agent → Chat)
-   - [ ] Prompt versioning
-   - [ ] Prompt templates with slots
-   - [ ] Context injection
+  - [x] Prompt variable interpolation
+  - [x] System prompt hierarchy (Global → Workspace → Agent → Chat)
+  - [x] Prompt versioning
+  - [ ] Prompt templates with slots
+  - [x] Context injection
 
 7. **Template Variables & Preview**
    - [ ] Template variable editor in TemplateEditor
@@ -371,7 +371,6 @@ None - All Sprint 2 priority features complete!
    - [ ] Toast notifications for actions
    - [ ] Confirmation dialogs with better UX
    - [ ] Animation transitions
-   - [ ] Dark mode toggle (currently forced dark)
    - [ ] Accessibility improvements (ARIA labels, keyboard nav)
 
 10. **Analytics & Monitoring**

@@ -23,7 +23,7 @@ export const TemplateCard = ({
   onToggleFavorite,
 }: TemplateCardProps) => {
   return (
-    <Card className="hover:border-primary/50 transition-colors">
+    <Card className="hover:border-border transition-colors">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -37,6 +37,8 @@ export const TemplateCard = ({
                     ? 'text-yellow-500' 
                     : 'text-muted-foreground hover:text-foreground'
                 )}
+                title={template.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                aria-label={template.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
               >
                 <Star className={clsx('w-4 h-4', template.isFavorite && 'fill-current')} />
               </button>
@@ -77,7 +79,7 @@ export const TemplateCard = ({
               {template.variables.map((variable) => (
                 <code 
                   key={variable.name}
-                  className="text-xs bg-muted px-1.5 py-0.5 rounded"
+                  className="text-xs bg-muted/60 px-1.5 py-0.5 rounded"
                 >
                   {variable.name}
                   {variable.required && <span className="text-destructive">*</span>}
@@ -94,6 +96,8 @@ export const TemplateCard = ({
             variant="ghost"
             onClick={() => onTest?.(template)}
             className="flex-1"
+            title="Test template"
+            aria-label="Test template"
           >
             <Play className="w-3 h-3 mr-1" />
             Test
@@ -102,6 +106,8 @@ export const TemplateCard = ({
             size="sm"
             variant="ghost"
             onClick={() => onEdit?.(template)}
+            title="Edit template"
+            aria-label="Edit template"
           >
             <Edit className="w-3 h-3" />
           </Button>
@@ -109,6 +115,8 @@ export const TemplateCard = ({
             size="sm"
             variant="ghost"
             onClick={() => onDelete?.(template)}
+            title="Delete template"
+            aria-label="Delete template"
           >
             <Trash2 className="w-3 h-3" />
           </Button>

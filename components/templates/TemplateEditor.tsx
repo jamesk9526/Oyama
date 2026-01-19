@@ -168,7 +168,7 @@ export const TemplateEditor = ({
                 placeholder="Add tag..."
                 className="flex-1"
               />
-              <Button type="button" onClick={addTag} size="sm">
+              <Button type="button" onClick={addTag} size="sm" title="Add tag" aria-label="Add tag">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -179,6 +179,8 @@ export const TemplateEditor = ({
                     key={tag}
                     onClick={() => removeTag(tag)}
                     className="cursor-pointer"
+                    title={`Remove ${tag}`}
+                    aria-label={`Remove ${tag}`}
                   >
                     <Badge>
                       {tag}
@@ -199,6 +201,8 @@ export const TemplateEditor = ({
                 variant="ghost"
                 size="sm"
                 onClick={detectVariables}
+                title="Detect variables"
+                aria-label="Detect variables"
               >
                 Detect Variables
               </Button>
@@ -264,6 +268,8 @@ export const TemplateEditor = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeVariable(index)}
+                  title="Remove variable"
+                  aria-label="Remove variable"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -280,6 +286,8 @@ export const TemplateEditor = ({
                     checked={variable.required}
                     onChange={(e) => updateVariable(index, { required: e.target.checked })}
                     className="rounded"
+                    aria-label="Required"
+                    title="Required"
                   />
                   Required
                 </label>

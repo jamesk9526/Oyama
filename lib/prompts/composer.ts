@@ -8,12 +8,19 @@ export interface PromptCompositionResult {
     workspace?: string;
     agent?: string;
     chat?: string;
+    memory?: string;
     blocks?: string[];
   };
   metadata: {
     compiledAt: string;
     totalLength: number;
   };
+}
+
+export interface PromptCompositionOptions {
+  variables?: Record<string, string>;
+  includeMemory?: boolean;
+  memoryLimit?: number;
 }
 
 /**
@@ -28,13 +35,16 @@ export class PromptComposer {
     workspaceId: string,
     agentId?: string,
     chatId?: string,
-    enabledBlockIds?: string[]
+    enabledBlockIds?: string[],
+    options: PromptCompositionOptions = {}
   ): Promise<PromptCompositionResult> {
     const layers: PromptCompositionResult['layers'] = {};
     const parts: string[] = [];
 
+    const variables = this.buildVariables(workspaceId, agentId, chatId, options.variables);
+
     // 1. Global System Prompt
-    const globalPrompt = this.getGlobalPrompt();
+    const globalPrompt = this.interpolate(this.getGlobalPrompt(), variables);
     if (globalPrompt) {
       layers.global = globalPrompt;
       parts.push(globalPrompt);
@@ -43,20 +53,22 @@ export class PromptComposer {
     // 2. Workspace System Prompt
     const workspace = this.getWorkspace(workspaceId);
     if (workspace?.systemPrompt) {
-      layers.workspace = workspace.systemPrompt;
-      parts.push(workspace.systemPrompt);
+      const workspacePrompt = this.interpolate(workspace.systemPrompt, variables);
+      layers.workspace = workspacePrompt;
+      parts.push(workspacePrompt);
     }
 
     // 3. Agent System Prompt
     if (agentId) {
       const agent = this.getAgent(agentId);
       if (agent?.systemPrompt) {
-        layers.agent = agent.systemPrompt;
-        parts.push(agent.systemPrompt);
+        const agentPrompt = this.interpolate(agent.systemPrompt, variables);
+        layers.agent = agentPrompt;
+        parts.push(agentPrompt);
         
         // Add style rules if present
         if (agent.styleRules) {
-          parts.push(`\nStyle Rules:\n${agent.styleRules}`);
+          parts.push(`\nStyle Rules:\n${this.interpolate(agent.styleRules, variables)}`);
         }
       }
     }
@@ -65,8 +77,18 @@ export class PromptComposer {
     if (chatId) {
       const chat = this.getChat(chatId);
       if (chat?.systemPromptOverrides) {
-        layers.chat = chat.systemPromptOverrides;
-        parts.push(chat.systemPromptOverrides);
+        const chatPrompt = this.interpolate(chat.systemPromptOverrides, variables);
+        layers.chat = chatPrompt;
+        parts.push(chatPrompt);
+      }
+    }
+
+    // 4.5 Optional memory injection
+    if (options.includeMemory && chatId) {
+      const memory = this.getChatMemory(chatId, options.memoryLimit ?? 20);
+      if (memory) {
+        layers.memory = memory;
+        parts.push(memory);
       }
     }
 
@@ -74,11 +96,11 @@ export class PromptComposer {
     if (enabledBlockIds && enabledBlockIds.length > 0) {
       const blocks = this.getPromptBlocks(enabledBlockIds);
       if (blocks.length > 0) {
-        layers.blocks = blocks.map(b => b.content);
+        layers.blocks = blocks.map(b => this.interpolate(b.content, variables));
         parts.push('\n--- Additional Instructions ---');
         blocks.forEach(block => {
           parts.push(`\n[${block.type.toUpperCase()}] ${block.name}:`);
-          parts.push(block.content);
+          parts.push(this.interpolate(block.content, variables));
         });
       }
     }
@@ -102,25 +124,28 @@ export class PromptComposer {
     workspaceId: string,
     agentId?: string,
     customPrompt?: string,
-    enabledBlockIds?: string[]
+    enabledBlockIds?: string[],
+    options: PromptCompositionOptions = {}
   ): Promise<string> {
     const parts: string[] = [];
 
-    const globalPrompt = this.getGlobalPrompt();
+    const variables = this.buildVariables(workspaceId, agentId, undefined, options.variables);
+
+    const globalPrompt = this.interpolate(this.getGlobalPrompt(), variables);
     if (globalPrompt) parts.push(globalPrompt);
 
     const workspace = this.getWorkspace(workspaceId);
-    if (workspace?.systemPrompt) parts.push(workspace.systemPrompt);
+    if (workspace?.systemPrompt) parts.push(this.interpolate(workspace.systemPrompt, variables));
 
     if (agentId) {
       const agent = this.getAgent(agentId);
       if (agent?.systemPrompt) {
-        parts.push(agent.systemPrompt);
-        if (agent.styleRules) parts.push(`\nStyle Rules:\n${agent.styleRules}`);
+        parts.push(this.interpolate(agent.systemPrompt, variables));
+        if (agent.styleRules) parts.push(`\nStyle Rules:\n${this.interpolate(agent.styleRules, variables)}`);
       }
     }
 
-    if (customPrompt) parts.push(customPrompt);
+    if (customPrompt) parts.push(this.interpolate(customPrompt, variables));
 
     if (enabledBlockIds && enabledBlockIds.length > 0) {
       const blocks = this.getPromptBlocks(enabledBlockIds);
@@ -128,7 +153,7 @@ export class PromptComposer {
         parts.push('\n--- Additional Instructions ---');
         blocks.forEach(block => {
           parts.push(`\n[${block.type.toUpperCase()}] ${block.name}:`);
-          parts.push(block.content);
+          parts.push(this.interpolate(block.content, variables));
         });
       }
     }
@@ -144,6 +169,72 @@ export class PromptComposer {
       .prepare('SELECT value FROM global_settings WHERE key = ?')
       .get('global_system_prompt') as { value: string } | undefined;
     return result?.value || null;
+  }
+
+  /**
+   * Build interpolation variables from known entities and supplied values
+   */
+  private static buildVariables(
+    workspaceId: string,
+    agentId?: string,
+    chatId?: string,
+    overrides: Record<string, string> = {}
+  ): Record<string, string> {
+    const vars: Record<string, string> = { ...overrides };
+
+    const workspace = this.getWorkspace(workspaceId);
+    if (workspace) {
+      vars.workspaceName = vars.workspaceName ?? workspace.name;
+      if (workspace.description) vars.workspaceDescription = vars.workspaceDescription ?? workspace.description;
+    }
+
+    if (agentId) {
+      const agent = this.getAgent(agentId);
+      if (agent) {
+        vars.agentName = vars.agentName ?? agent.name;
+        vars.agentRole = vars.agentRole ?? agent.role;
+      }
+    }
+
+    if (chatId) {
+      const chat = this.getChat(chatId);
+      if (chat) {
+        vars.chatTitle = vars.chatTitle ?? chat.title;
+      }
+    }
+
+    return vars;
+  }
+
+  /**
+   * Interpolate {{var}} and {{var|default}} placeholders
+   */
+  private static interpolate(template: string | null, variables: Record<string, string>): string {
+    if (!template) return '';
+    return template.replace(/\{\{\s*([a-zA-Z0-9_\-\.]+)(?:\|([^}]+))?\s*\}\}/g, (_match, key, fallback) => {
+      const value = variables[key];
+      if (value !== undefined && value !== null && value !== '') return value;
+      return (fallback ?? '').trim();
+    });
+  }
+
+  /**
+   * Get recent conversation memory as a prompt block
+   */
+  private static getChatMemory(chatId: string, limit: number): string | null {
+    try {
+      const rows = db
+        .prepare('SELECT role, content, timestamp FROM messages WHERE chatId = ? ORDER BY timestamp DESC LIMIT ?')
+        .all(chatId, limit) as Array<{ role: string; content: string; timestamp: string }>;
+
+      if (!rows || rows.length === 0) return null;
+
+      const ordered = rows.reverse();
+      const lines = ordered.map(row => `- (${row.role}) ${row.content}`);
+      return `## Conversation Memory (recent ${ordered.length})\n${lines.join('\n')}`;
+    } catch (error) {
+      return null;
+    }
   }
 
   /**

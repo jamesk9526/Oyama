@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// This would connect to the in-memory storage or database
-// For now, we'll create a placeholder that would be implemented
+import { crewQueries } from '@/lib/db/queries';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
-  
-  // TODO: Implement crew retrieval
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+  const crew = crewQueries.getById(id);
+  if (!crew) {
+    return NextResponse.json({ error: 'Crew not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(crew);
 }
 
 export async function PUT(
@@ -19,9 +20,12 @@ export async function PUT(
 ) {
   const { id } = params;
   const body = await request.json();
-  
-  // TODO: Implement crew update
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+  const updated = crewQueries.update(id, body);
+  if (!updated) {
+    return NextResponse.json({ error: 'Crew not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(
@@ -29,7 +33,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
-  
-  // TODO: Implement crew deletion
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+  const crew = crewQueries.getById(id);
+  if (!crew) {
+    return NextResponse.json({ error: 'Crew not found' }, { status: 404 });
+  }
+
+  crewQueries.delete(id);
+  return NextResponse.json({ success: true });
 }

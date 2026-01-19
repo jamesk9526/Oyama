@@ -164,17 +164,19 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
     // Add agent quick access
     agents.forEach((agent) => {
+      const agentName = agent.name || 'Agent';
+      const agentRole = agent.role || 'custom';
       cmds.push({
         id: `agent-${agent.id}`,
-        label: agent.name,
-        description: agent.role,
+        label: agentName,
+        description: agentRole,
         category: 'agents',
         icon: <Users className="w-4 h-4" />,
         action: () => {
           router.push('/agents');
           onClose();
         },
-        keywords: [agent.name.toLowerCase(), agent.role.toLowerCase()],
+        keywords: [agentName.toLowerCase(), agentRole.toLowerCase()],
       });
     });
 

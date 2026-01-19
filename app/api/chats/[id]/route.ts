@@ -18,8 +18,9 @@ export async function GET(
     return NextResponse.json(chat);
   } catch (error) {
     console.error('Error fetching chat:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch chat' },
+      { error: 'Failed to fetch chat', details: errorMessage },
       { status: 500 }
     );
   }
@@ -43,8 +44,9 @@ export async function PUT(
     return NextResponse.json(updatedChat);
   } catch (error) {
     console.error('Error updating chat:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to update chat' },
+      { error: 'Failed to update chat', details: errorMessage },
       { status: 500 }
     );
   }

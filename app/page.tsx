@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, Sparkles } from 'lucide-react';
+import { MessageSquare, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 
@@ -63,6 +63,27 @@ export default function Home() {
             <p className="text-sm text-muted-foreground">
               SQLite database with full export/import capabilities
             </p>
+          </div>
+        </div>
+
+        {/* Setup Wizard Reminder */}
+        <div className="mt-8 sm:mt-12 p-4 sm:p-6 rounded-lg bg-primary/5 border border-primary/20 max-w-md mx-auto">
+          <div className="flex gap-3">
+            <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="text-left">
+              <h3 className="font-semibold text-sm mb-1">Personalize Your Experience</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Run the setup wizard to add your personal information and preferences for a more tailored AI experience.
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => router.push('/settings')}
+                className="text-xs h-7"
+              >
+                Open Setup Wizard
+              </Button>
+            </div>
           </div>
         </div>
 

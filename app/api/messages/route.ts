@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(messages);
   } catch (error) {
     console.error('Error fetching messages:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch messages' },
+      { error: 'Failed to fetch messages', details: errorMessage },
       { status: 500 }
     );
   }
@@ -39,8 +40,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(createdMessage, { status: 201 });
   } catch (error) {
     console.error('Error creating message:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to create message' },
+      { error: 'Failed to create message', details: errorMessage },
       { status: 500 }
     );
   }

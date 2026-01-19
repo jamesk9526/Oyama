@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
 import { useSettingsStore, generateSystemPrompt } from '@/lib/stores/settings';
 
 interface SystemSetupWizardProps {
@@ -90,6 +91,9 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
   const [communicationStyle, setCommunicationStyle] = useState<'formal' | 'conversational' | 'friendly' | 'professional'>(
     settings.communicationStyle || 'conversational'
   );
+  const [partnerMode, setPartnerMode] = useState(settings.partnerMode || false);
+  const [partnerName, setPartnerName] = useState(settings.partnerName || 'Partner');
+  const [partnerGender, setPartnerGender] = useState<'male' | 'female' | 'neutral'>(settings.partnerGender || 'neutral');
   const [customPrompt, setCustomPrompt] = useState(false);
   const [customPromptText, setCustomPromptText] = useState(settings.systemPrompt);
 
@@ -102,7 +106,7 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
   };
 
   const handleNext = () => {
-    if (step < 6) {
+    if (step < 7) {
       setStep(step + 1);
     } else {
       handleComplete();
@@ -122,15 +126,21 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
       relationshipType,
       personalityTraits: selectedTraits,
       communicationStyle,
+      partnerMode,
+      partnerName,
+      partnerGender,
       systemPrompt: customPrompt ? customPromptText : generateSystemPrompt(
         systemName,
         userName,
         relationshipType,
         selectedTraits,
-        communicationStyle
+        communicationStyle,
+        partnerMode,
+        partnerGender,
+        partnerName
       ),
     };
-    
+
     settings.updateSettings(newSettings);
     onClose();
     setStep(1);
@@ -150,14 +160,16 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-      <div className="bg-background border border-border rounded-lg p-8 max-w-2xl w-full mx-4 shadow-lg my-8">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
+      <div className="bg-background/95 border border-border/60 rounded-xl p-8 max-w-2xl w-full mx-4 shadow-xl my-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Personalize Your AI Assistant</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Personalize Your AI Assistant</h2>
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
+            title="Close"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -165,11 +177,11 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
 
         {/* Progress indicator */}
         <div className="flex gap-2 mb-8">
-          {[1, 2, 3, 4, 5, 6].map((stepNum) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((stepNum) => (
             <div
               key={stepNum}
               className={`h-2 flex-1 rounded-full transition-colors ${
-                stepNum <= step ? 'bg-primary' : 'bg-secondary'
+                stepNum <= step ? 'bg-primary' : 'bg-muted'
               }`}
             />
           ))}
@@ -182,7 +194,7 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
             <p className="text-sm text-muted-foreground">
               Let's create a truly personalized AI experience. This wizard will help you define not just names, but the personality and relationship type with your assistant.
             </p>
-            <div className="bg-secondary/50 border border-border rounded p-4 mt-4 space-y-2">
+            <div className="bg-muted/40 border border-border/60 rounded-lg p-4 mt-4 space-y-2">
               <p className="text-sm font-medium">We'll configure:</p>
               <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                 <li>Names (system & yours)</li>
@@ -247,10 +259,10 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
                 <button
                   key={option.id}
                   onClick={() => setRelationshipType(option.id as any)}
-                  className={`p-4 border-2 rounded-lg text-left transition-all ${
+                  className={`p-4 border rounded-lg text-left transition-colors ${
                     relationshipType === option.id
                       ? `${getColorClass(option.color)} border-current`
-                      : 'border-border hover:border-muted-foreground/50'
+                      : 'border-border/60 hover:border-border'
                   }`}
                 >
                   <p className="font-medium">{option.label}</p>
@@ -276,10 +288,10 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
                 <button
                   key={trait}
                   onClick={() => toggleTrait(trait)}
-                  className={`p-3 border-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
                     selectedTraits.includes(trait)
-                      ? 'bg-primary/20 border-primary text-primary'
-                      : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary/15 border-primary/40 text-primary'
+                      : 'border-border/60 hover:border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {trait}
@@ -307,10 +319,10 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
                 <button
                   key={style.id}
                   onClick={() => setCommunicationStyle(style.id as any)}
-                  className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
+                  className={`w-full p-4 border rounded-lg text-left transition-colors ${
                     communicationStyle === style.id
-                      ? 'bg-primary/20 border-primary'
-                      : 'border-border hover:border-muted-foreground/50'
+                      ? 'bg-primary/15 border-primary/40'
+                      : 'border-border/60 hover:border-border'
                   }`}
                 >
                   <p className="font-medium">{style.label}</p>
@@ -333,6 +345,8 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
                   checked={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.checked)}
                   className="w-4 h-4"
+                  aria-label="Use a custom system prompt"
+                  title="Use a custom system prompt"
                 />
                 <span className="text-sm">Use a custom system prompt</span>
               </label>
@@ -356,18 +370,112 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
                 </p>
               </div>
             ) : (
-              <div className="bg-secondary/50 border border-border rounded p-4 max-h-60 overflow-y-auto">
+              <div className="bg-muted/40 border border-border/60 rounded-lg p-4 max-h-60 overflow-y-auto">
                 <p className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
                   {generateSystemPrompt(
                     systemName,
                     userName,
                     relationshipType,
                     selectedTraits,
-                    communicationStyle
+                    communicationStyle,
+                    partnerMode,
+                    partnerGender,
+                    partnerName
                   )}
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {step === 7 && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold mb-2">Partner Mode</h2>
+              <p className="text-muted-foreground">
+                Enable adult conversation mode (18+ only)
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                To enable: toggle Partner Mode on, then set partner name and gender.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-muted/40 border border-border/60 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-medium text-red-600 dark:text-red-400">Partner Mode</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Enable unrestricted adult conversation
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={partnerMode}
+                      onChange={(e) => setPartnerMode(e.target.checked)}
+                      className="sr-only peer"
+                      aria-label="Partner mode"
+                      title="Partner mode"
+                    />
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                  </label>
+                </div>
+
+                {partnerMode ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="partner-name" className="text-sm font-medium">
+                          Partner Name
+                        </Label>
+                        <Input
+                          id="partner-name"
+                          type="text"
+                          value={partnerName}
+                          onChange={(e) => setPartnerName(e.target.value)}
+                          placeholder="Enter name"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="partner-gender" className="text-sm font-medium">
+                          Gender
+                        </Label>
+                        <Select
+                          id="partner-gender"
+                          value={partnerGender}
+                          onChange={(e) => setPartnerGender(e.target.value as 'male' | 'female' | 'neutral')}
+                        >
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="neutral">Neutral</option>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="bg-green-50/80 dark:bg-green-900/20 border border-green-200/60 dark:border-green-800/60 rounded p-3">
+                      <h4 className="font-medium text-green-800 dark:text-green-200 mb-1">✓ Enabled</h4>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        AI will engage in unrestricted adult conversation as {partnerName}, a {partnerGender} partner, including intimate, sexual, and mature topics.
+                      </p>
+                    </div>
+                    <div className="bg-red-50/80 dark:bg-red-900/20 border border-red-200/60 dark:border-red-800/60 rounded p-3">
+                      <h4 className="font-medium text-red-800 dark:text-red-200 mb-1">⚠️ Strict Boundaries</h4>
+                      <p className="text-sm text-red-700 dark:text-red-300">
+                        AI will absolutely refuse any content involving minors, non-consensual acts, violence, illegal activities, or harm.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200/60 dark:border-blue-800/60 rounded p-3">
+                    <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-1">Standard Mode</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      AI will maintain appropriate, professional conversation boundaries.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -384,13 +492,13 @@ export function SystemSetupWizard({ isOpen, onClose }: SystemSetupWizardProps) {
             onClick={handleNext}
             className="flex-1"
           >
-            {step === 6 ? 'Complete' : 'Next'}
+            {step === 7 ? 'Complete' : 'Next'}
           </Button>
         </div>
 
         {/* Step indicator text */}
         <p className="text-xs text-muted-foreground text-center mt-4">
-          Step {step} of 6
+          Step {step} of 7
         </p>
       </div>
     </div>

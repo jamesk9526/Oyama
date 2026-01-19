@@ -11,7 +11,7 @@ export const Card = ({ children, className, padding = 'md' }: CardProps) => {
   return (
     <div
       className={clsx(
-        'rounded-lg border border-border bg-secondary',
+        'rounded-xl border border-border/60 bg-background',
         {
           'p-0': padding === 'none',
           'p-3': padding === 'sm',

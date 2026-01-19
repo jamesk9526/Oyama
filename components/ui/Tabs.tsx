@@ -49,7 +49,7 @@ export const TabsList = ({ children, className }: TabsListProps) => {
   return (
     <div
       className={clsx(
-        'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
+        'inline-flex h-10 items-center justify-center rounded-lg border border-border/60 bg-muted/40 p-1 text-muted-foreground',
         className
       )}
     >
@@ -68,13 +68,13 @@ export const TabsTrigger = ({ value, children, className }: TabsTriggerProps) =>
     <button
       onClick={() => context.setValue(value)}
       className={clsx(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5',
-        'text-sm font-medium ring-offset-background transition-all',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5',
+        'text-sm font-medium ring-offset-background transition-colors',
+        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0',
         'disabled:pointer-events-none disabled:opacity-50',
         {
-          'bg-background text-foreground shadow-sm': isActive,
-          'hover:bg-background/50': !isActive,
+          'bg-background text-foreground border border-border/60': isActive,
+          'hover:bg-background/60 hover:text-foreground': !isActive,
         },
         className
       )}

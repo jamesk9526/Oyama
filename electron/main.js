@@ -1,10 +1,63 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
-const isDev = require('electron-is-dev');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow = null;
+let nextApp = null;
+let server = null;
+let serverPort = null;
+const isDev = !app.isPackaged;
 
-function createWindow() {
+function logToFile(message) {
+  try {
+    const logPath = path.join(app.getPath('userData'), 'main.log');
+    const line = `[${new Date().toISOString()}] ${message}\n`;
+    fs.appendFileSync(logPath, line);
+  } catch (error) {
+    console.error('Failed to write log:', error);
+  }
+}
+
+async function startNextServer() {
+  const next = require('next');
+  const http = require('http');
+
+  const appDir = app.isPackaged ? app.getAppPath() : process.cwd();
+  const cacheDir = path.join(app.getPath('userData'), '.next-cache');
+  process.env.NEXT_CACHE_DIR = cacheDir;
+
+  logToFile(`Starting Next.js server. appDir=${appDir} cacheDir=${cacheDir}`);
+
+  nextApp = next({
+    dev: false,
+    dir: appDir,
+  });
+
+  const handle = nextApp.getRequestHandler();
+  await nextApp.prepare();
+
+  server = http.createServer((req, res) => {
+    handle(req, res);
+  });
+
+  return new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', (err) => {
+      if (err) {
+        logToFile(`Next.js server failed: ${err.message}`);
+        reject(err);
+        return;
+      }
+      const address = server.address();
+      serverPort = typeof address === 'object' && address ? address.port : 3000;
+      logToFile(`Next.js server ready on http://127.0.0.1:${serverPort}`);
+      resolve();
+    });
+  });
+}
+
+async function createWindow() {
+  logToFile(`createWindow: isDev=${isDev} isPackaged=${app.isPackaged}`);
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -19,15 +72,32 @@ function createWindow() {
     icon: path.join(__dirname, '../assets/icon.png'),
   });
 
-  const startUrl = isDev
-    ? 'http://localhost:3000'
-    : `file://${path.join(__dirname, '../out/index.html')}`;
+  try {
+    if (!isDev) {
+      await startNextServer();
+    }
 
-  mainWindow.loadURL(startUrl);
+    const startUrl = isDev
+      ? 'http://localhost:3000'
+      : `http://127.0.0.1:${serverPort}`;
 
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
+    mainWindow.loadURL(startUrl);
+  } catch (error) {
+    const message = `Failed to start server: ${error?.message || error}`;
+    logToFile(message);
+    dialog.showErrorBox('Startup Error', message);
+    mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(message)}`);
   }
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    const message = `did-fail-load: ${errorCode} ${errorDescription} ${validatedURL}`;
+    logToFile(message);
+    dialog.showErrorBox('Load Error', message);
+  });
+
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    logToFile(`render-process-gone: ${JSON.stringify(details)}`);
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -37,6 +107,12 @@ function createWindow() {
 app.on('ready', createWindow);
 
 app.on('window-all-closed', () => {
+  if (server) {
+    server.close();
+  }
+  if (nextApp) {
+    nextApp.close();
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -45,6 +121,15 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
+  }
+});
+
+app.on('before-quit', () => {
+  if (server) {
+    server.close();
+  }
+  if (nextApp) {
+    nextApp.close();
   }
 });
 

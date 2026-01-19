@@ -16,13 +16,13 @@ export const Badge = ({
   return (
     <span
       className={clsx(
-        'inline-flex items-center rounded-md font-medium',
+        'inline-flex items-center rounded-full font-medium border',
         {
-          'bg-muted text-foreground': variant === 'default',
-          'bg-primary text-primary-foreground': variant === 'primary',
-          'bg-green-500/10 text-green-500 border border-green-500/20': variant === 'success',
-          'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20': variant === 'warning',
-          'bg-destructive/10 text-destructive border border-destructive/20': variant === 'destructive',
+          'bg-muted/60 text-foreground border-border/60': variant === 'default',
+          'bg-primary/15 text-primary border-primary/30': variant === 'primary',
+          'bg-green-500/10 text-green-500 border-green-500/20': variant === 'success',
+          'bg-yellow-500/10 text-yellow-500 border-yellow-500/20': variant === 'warning',
+          'bg-destructive/10 text-destructive border-destructive/20': variant === 'destructive',
         },
         {
           'px-2 py-0.5 text-xs': size === 'sm',

@@ -42,6 +42,8 @@ export interface WorkflowExecutionResult {
   error?: string;
 }
 
+export type WorkflowStepCallback = (result: WorkflowStepResult) => void;
+
 export interface WorkflowContext {
   variables: Record<string, any>;
   previousResults: WorkflowStepResult[];

@@ -48,14 +48,14 @@ export const Modal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
         className={clsx(
-          'relative z-10 w-full bg-background border border-border rounded-lg shadow-lg',
+          'relative z-10 w-full bg-background/95 border border-border/60 rounded-xl shadow-xl',
           'max-h-[90vh] overflow-hidden flex flex-col',
           {
             'max-w-sm': size === 'sm',
@@ -68,7 +68,7 @@ export const Modal = ({
       >
         {/* Header */}
         {(title || description) && (
-          <div className="px-6 py-4 border-b border-border">
+          <div className="px-6 py-4 border-b border-border/60">
             <div className="flex items-start justify-between">
               <div>
                 {title && (
@@ -83,6 +83,8 @@ export const Modal = ({
               <button
                 onClick={onClose}
                 className="ml-4 text-muted-foreground hover:text-foreground transition-colors"
+                title="Close"
+                aria-label="Close"
               >
                 <X size={20} />
               </button>
@@ -102,7 +104,7 @@ export const Modal = ({
 
 export const ModalFooter = ({ children }: { children: ReactNode }) => {
   return (
-    <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
+    <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border/60">
       {children}
     </div>
   );

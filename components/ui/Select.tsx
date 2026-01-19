@@ -15,11 +15,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           className={clsx(
-            'flex h-10 w-full appearance-none rounded-md border border-input bg-background px-3 py-2 pr-8',
+            'flex h-10 w-full appearance-none rounded-md border border-input/60 bg-background px-3 py-2 pr-8',
             'text-sm text-foreground',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            'transition-colors',
+            'transition-colors hover:border-input',
             {
               'border-destructive focus-visible:ring-destructive': error,
             },

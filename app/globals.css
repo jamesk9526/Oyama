@@ -124,3 +124,172 @@ code {
     overflow: hidden;
   }
 }
+
+/* Zen Animations */
+@keyframes zen-breathe {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.002);
+  }
+}
+
+@keyframes zen-float-approach {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.15);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes zen-glow-intense {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.3), 0 0 24px rgba(99, 102, 241, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5), 0 0 40px rgba(99, 102, 241, 0.25);
+  }
+}
+
+@keyframes zen-gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes zen-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zen-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+  }
+}
+
+/* Zen Chat Message Animations */
+.zen-message {
+  animation: zen-fade-in 0.4s ease-out;
+}
+
+.zen-message-user {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+  background-size: 200% 200%;
+  animation: zen-gradient 8s ease infinite;
+}
+
+.zen-message-assistant {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03), rgba(99, 102, 241, 0.03));
+  background-size: 200% 200%;
+  animation: zen-gradient 10s ease infinite;
+}
+
+.zen-breathe {
+  animation: zen-breathe 4s ease-in-out infinite;
+}
+
+.zen-glow {
+  animation: zen-glow 3s ease-in-out infinite;
+}
+
+/* Mood States */
+.mood-idle {
+  background: linear-gradient(135deg, rgba(39, 39, 42, 0.3), rgba(39, 39, 42, 0.1));
+  transition: background 0.6s ease;
+}
+
+.mood-focused {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.04));
+  transition: background 0.6s ease;
+}
+
+.mood-thinking {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(168, 85, 247, 0.03));
+  transition: background 0.6s ease;
+}
+
+.mood-success {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(74, 222, 128, 0.03));
+  transition: background 0.6s ease;
+}
+
+.mood-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.06), rgba(248, 113, 113, 0.03));
+  transition: background 0.6s ease;
+}
+
+/* Splash Screen */
+.splash-logo {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.splash-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  animation: spin 3s linear infinite;
+}
+
+.splash-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.6);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Floating Action Button */
+.zen-fab {
+  position: fixed;
+  bottom: 6rem;
+  right: 1.5rem;
+  z-index: 30;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zen-fab.zen-fab-nearby {
+  animation: zen-float-approach 0.6s ease-in-out;
+}
+
+.zen-fab.zen-fab-nearby button {
+  animation: zen-glow-intense 1.5s ease-in-out infinite;
+}
+
+.zen-fab:hover {
+  transform: translateY(-2px);
+}
+
+.zen-fab-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: zen-fade-in 0.2s ease-out;
+}

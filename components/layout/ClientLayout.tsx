@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { CommandPalette } from '@/components/CommandPalette';
+import { SplashScreen } from '@/components/layout/SplashScreen';
 import { useAgentsStore } from '@/lib/stores/agents';
 import { useTemplatesStore } from '@/lib/stores/templates';
 import { useCrewsStore } from '@/lib/stores/crews';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const { fetchAgents } = useAgentsStore();
   const { fetchTemplates } = useTemplatesStore();
   const { fetchCrews } = useCrewsStore();
@@ -35,6 +37,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <SplashScreen onComplete={() => setShowSplash(false)} />
       {children}
       <CommandPalette
         isOpen={commandPaletteOpen}

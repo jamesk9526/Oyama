@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Agent, AgentRole, AgentCapability } from '@/types';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -10,9 +10,11 @@ import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { Card } from '@/components/ui/Card';
+import { useSettingsStore } from '@/lib/stores/settings';
 
 interface AgentBuilderProps {
   agent?: Agent | null;
+  draft?: Partial<Agent> | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (agent: Partial<Agent>) => void;
@@ -75,19 +77,79 @@ const availableCapabilities: { value: AgentCapability; label: string; descriptio
 
 export const AgentBuilder = ({
   agent,
+  draft,
   isOpen,
   onClose,
   onSave,
 }: AgentBuilderProps) => {
-  const [name, setName] = useState(agent?.name || '');
-  const [role, setRole] = useState<AgentRole>(agent?.role || 'custom');
-  const [systemPrompt, setSystemPrompt] = useState(agent?.systemPrompt || '');
-  const [styleRules, setStyleRules] = useState(agent?.styleRules || '');
-  const [model, setModel] = useState(agent?.model || 'llama2');
-  const [provider, setProvider] = useState(agent?.provider || 'ollama');
-  const [capabilities, setCapabilities] = useState<AgentCapability[]>(agent?.capabilities || []);
-  const [icon, setIcon] = useState(agent?.icon || '🤖');
-  const [colorTag, setColorTag] = useState(agent?.colorTag || '#6366f1');
+  const settings = useSettingsStore();
+  const [name, setName] = useState(agent?.name || draft?.name || '');
+  const [role, setRole] = useState<AgentRole>(agent?.role || (draft?.role as AgentRole) || 'custom');
+  const [systemPrompt, setSystemPrompt] = useState(agent?.systemPrompt || draft?.systemPrompt || '');
+  const [styleRules, setStyleRules] = useState(agent?.styleRules || draft?.styleRules || '');
+  const [model, setModel] = useState(agent?.model || draft?.model || 'llama2');
+  const [provider, setProvider] = useState(agent?.provider || draft?.provider || 'ollama');
+  const [capabilities, setCapabilities] = useState<AgentCapability[]>(agent?.capabilities || draft?.capabilities || []);
+  const [icon, setIcon] = useState(
+    typeof agent?.icon === 'string'
+      ? agent.icon
+      : typeof draft?.icon === 'string'
+        ? draft.icon
+        : '🤖'
+  );
+  const [colorTag, setColorTag] = useState(agent?.colorTag || draft?.colorTag || '#6366f1');
+  const ollamaModels = (settings.ollamaAvailableModels || [])
+    .map((item: any) => (typeof item === 'string' ? item : item?.name || ''))
+    .filter((item: string) => item);
+  const isCustomOllamaModel = !!model && !ollamaModels.includes(model);
+  const safeIcon = typeof icon === 'string' ? icon : '🤖';
+  const isIconUrl = /^https?:\/\//i.test(safeIcon);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (agent) {
+      setName(agent.name || '');
+      setRole(agent.role || 'custom');
+      setSystemPrompt(agent.systemPrompt || '');
+      setStyleRules(agent.styleRules || '');
+      setModel(agent.model || 'llama2');
+      setProvider(agent.provider || 'ollama');
+      setCapabilities(agent.capabilities || []);
+      setIcon(typeof agent.icon === 'string' ? agent.icon : '🤖');
+      setColorTag(agent.colorTag || '#6366f1');
+      return;
+    }
+
+    if (draft) {
+      setName(draft.name || '');
+      setRole((draft.role as AgentRole) || 'custom');
+      setSystemPrompt(draft.systemPrompt || '');
+      setStyleRules(draft.styleRules || '');
+      setModel(draft.model || 'llama2');
+      setProvider(draft.provider || 'ollama');
+      setCapabilities(draft.capabilities || []);
+      setIcon(typeof draft.icon === 'string' ? draft.icon : '🤖');
+      setColorTag(draft.colorTag || '#6366f1');
+      return;
+    }
+
+    setName('');
+    setRole('custom');
+    setSystemPrompt('');
+    setStyleRules('');
+    setModel('llama2');
+    setProvider('ollama');
+    setCapabilities([]);
+    setIcon('🤖');
+    setColorTag('#6366f1');
+  }, [agent, draft, isOpen]);
+
+  useEffect(() => {
+    if (provider === 'ollama' && !model) {
+      setModel(settings.ollamaModel || '');
+    }
+  }, [provider, model, settings.ollamaModel]);
 
   const handleRoleChange = (newRole: AgentRole) => {
     setRole(newRole);
@@ -186,8 +248,8 @@ export const AgentBuilder = ({
                 >
                   <Card
                     padding="sm"
-                    className={`transition-all ${
-                      role === roleKey ? 'border-primary' : 'hover:border-primary/50'
+                    className={`transition-colors ${
+                      role === roleKey ? 'border-primary/50' : 'hover:border-border'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -257,13 +319,39 @@ export const AgentBuilder = ({
           {/* Model */}
           <div>
             <Label htmlFor="model" required>Model</Label>
-            <Input
-              id="model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g., llama2, gpt-4"
-              className="mt-1"
-            />
+            {provider === 'ollama' && ollamaModels.length > 0 ? (
+              <div className="space-y-2">
+                <Select
+                  id="model"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="mt-1"
+                >
+                  <option value="">Select a model...</option>
+                  {ollamaModels.map((ollamaModel) => (
+                    <option key={ollamaModel} value={ollamaModel}>
+                      {ollamaModel}
+                    </option>
+                  ))}
+                  {isCustomOllamaModel && (
+                    <option value={model}>{model} (custom)</option>
+                  )}
+                </Select>
+                <Input
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="Or type a custom model"
+                />
+              </div>
+            ) : (
+              <Input
+                id="model"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="e.g., llama2, gpt-4"
+                className="mt-1"
+              />
+            )}
             <p className="text-xs text-muted-foreground mt-1">
               Model name from your selected provider
             </p>
@@ -273,33 +361,42 @@ export const AgentBuilder = ({
           <div>
             <Label>Capabilities</Label>
             <div className="space-y-2 mt-2">
-              {availableCapabilities.map((cap) => (
-                <button
-                  key={cap.value}
-                  onClick={() => toggleCapability(cap.value)}
-                  className="cursor-pointer w-full"
-                >
-                  <Card
-                    padding="sm"
-                    className={`transition-all ${
-                      capabilities.includes(cap.value) ? 'border-primary' : ''
-                    }`}
+              {availableCapabilities.map((cap) => {
+                const isSelected = capabilities.includes(cap.value);
+                return (
+                  <button
+                    key={cap.value}
+                    onClick={() => toggleCapability(cap.value)}
+                    className="cursor-pointer w-full text-left"
+                    title={`Toggle ${cap.label}`}
+                    aria-label={`Toggle ${cap.label}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={capabilities.includes(cap.value)}
-                        onChange={() => {}}
-                        className="rounded"
-                      />
-                      <div>
-                        <p className="font-medium text-sm">{cap.label}</p>
-                        <p className="text-xs text-muted-foreground">{cap.description}</p>
+                    <Card
+                      padding="sm"
+                      className={`transition-colors ${
+                        isSelected ? 'border-primary/50' : 'border-border/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`h-4 w-4 rounded border flex items-center justify-center text-[10px] ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground border-primary/50'
+                              : 'border-border/60 text-muted-foreground'
+                          }`}
+                          aria-hidden="true"
+                        >
+                          {isSelected ? '✓' : ''}
+                        </span>
+                        <div>
+                          <p className="font-medium text-sm">{cap.label}</p>
+                          <p className="text-xs text-muted-foreground">{cap.description}</p>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                </button>
-              ))}
+                    </Card>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </TabsContent>
@@ -343,15 +440,21 @@ export const AgentBuilder = ({
             <Label>Preview</Label>
             <Card className="mt-2 p-4">
               <div className="flex items-center gap-3">
-                <div
-                  className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl"
-                  style={{ backgroundColor: colorTag + '20' }}
-                >
-                  {icon}
+                <div className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl bg-muted/60 overflow-hidden">
+                  {isIconUrl ? (
+                    <img
+                      src={safeIcon}
+                      alt="Agent icon"
+                      className="h-10 w-10 object-cover"
+                    />
+                  ) : (
+                    safeIcon
+                  )}
                 </div>
                 <div>
                   <h3 className="font-semibold">{name || 'Agent Name'}</h3>
                   <p className="text-sm text-muted-foreground capitalize">{role}</p>
+                  <p className="text-xs text-muted-foreground">{colorTag}</p>
                 </div>
               </div>
             </Card>
