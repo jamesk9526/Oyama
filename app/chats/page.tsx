@@ -181,13 +181,15 @@ export default function ChatsPage() {
 
     // Add user message
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       role: 'user',
       content: inputValue,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    saveMessage(userMessage); // Save to database
+
     const userInput = inputValue;
     setInputValue('');
     setLoading(true);
@@ -195,7 +197,7 @@ export default function ChatsPage() {
 
     // Create assistant message with streaming
     const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
+      id: uuidv4(),
       role: 'assistant',
       content: '',
       timestamp: new Date(),
@@ -239,6 +241,7 @@ export default function ChatsPage() {
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let fullContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -255,11 +258,12 @@ export default function ChatsPage() {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.chunk) {
+                fullContent += data.chunk;
                 // Update the assistant message with streamed content
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMessage.id
-                      ? { ...msg, content: msg.content + data.chunk }
+                      ? { ...msg, content: fullContent }
                       : msg
                   )
                 );
@@ -276,10 +280,11 @@ export default function ChatsPage() {
         try {
           const data = JSON.parse(buffer.slice(6));
           if (data.chunk) {
+            fullContent += data.chunk;
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === assistantMessage.id
-                  ? { ...msg, content: msg.content + data.chunk }
+                  ? { ...msg, content: fullContent }
                   : msg
               )
             );
@@ -287,6 +292,14 @@ export default function ChatsPage() {
         } catch (e) {
           // Skip parsing errors
         }
+      }
+
+      // Save the complete assistant message to database
+      if (fullContent) {
+        saveMessage({
+          ...assistantMessage,
+          content: fullContent,
+        });
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
@@ -312,6 +325,18 @@ export default function ChatsPage() {
             <p className="text-sm text-muted-foreground">
               Chat with AI agents powered by {settings.defaultProvider === 'ollama' ? 'Ollama' : 'OpenAI'}
             </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleNewChat} variant="secondary" size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              New Chat
+            </Button>
+            {messages.length > 0 && (
+              <Button onClick={handleClearChat} variant="ghost" size="sm">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear
+              </Button>
+            )}
           </div>
         </div>
       </div>

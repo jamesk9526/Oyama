@@ -106,7 +106,18 @@ export const Sidebar = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-3">
+          {/* Command Palette Hint */}
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Quick Search</span>
+              <kbd className="px-2 py-1 bg-background border border-border rounded text-xs font-mono">
+                Ctrl+K
+              </kbd>
+            </div>
+          </div>
+
+          {/* Workspace Info */}
           <div className="text-xs text-muted-foreground">
             <div className="flex items-center justify-between mb-1">
               <span>Workspace</span>

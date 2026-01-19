@@ -6,11 +6,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/Badge';
 import { Plus, Play, Edit, Trash2, Grid3X3 } from 'lucide-react';
 import { useCrewsStore, type Crew } from '@/lib/stores/crews';
+import { useSettingsStore } from '@/lib/stores/settings';
+import { CrewExecutionModal } from '@/components/crews/CrewExecutionModal';
 
 export default function CrewsPage() {
   const { crews, loading, fetchCrews, createCrew, updateCrew, deleteCrew } = useCrewsStore();
+  const settings = useSettingsStore();
   const [creatingNew, setCreatingNew] = useState(false);
   const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+  const [executingCrew, setExecutingCrew] = useState<Crew | null>(null);
 
   useEffect(() => {
     fetchCrews();
@@ -33,8 +37,11 @@ export default function CrewsPage() {
   };
 
   const handleRunCrew = (crew: Crew) => {
-    // TODO: Implement crew execution
-    console.log('Running crew:', crew.id);
+    setExecutingCrew(crew);
+  };
+
+  const handleCloseExecution = () => {
+    setExecutingCrew(null);
   };
 
   const getWorkflowLabel = (type: string) => {
@@ -163,6 +170,20 @@ export default function CrewsPage() {
           </div>
         )}
       </div>
+
+      {/* Execution Modal */}
+      {executingCrew && (
+        <CrewExecutionModal
+          crew={executingCrew}
+          isOpen={true}
+          onClose={handleCloseExecution}
+          ollamaUrl={settings.ollamaUrl}
+          model={settings.ollamaModel}
+          temperature={settings.temperature}
+          topP={settings.topP}
+          maxTokens={settings.maxTokens}
+        />
+      )}
     </div>
   );
 }

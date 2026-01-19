@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { WindowControls } from "@/components/layout/WindowControls";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 
 export const metadata: Metadata = {
   title: "Oyama - AI Agent Collaboration Platform",
@@ -26,7 +27,9 @@ export default function RootLayout({
         <div className="flex h-[calc(100vh-2rem)] overflow-hidden relative">
           <Sidebar />
           <main className="flex-1 overflow-hidden w-full">
-            {children}
+            <ClientLayout>
+              {children}
+            </ClientLayout>
           </main>
         </div>
       </body>
