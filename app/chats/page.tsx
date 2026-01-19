@@ -275,12 +275,7 @@ function ChatsPageInner() {
         if (e.key === 'k') {
           e.preventDefault();
           handleNewChat();
-        } else if (e.key === '/') {
-          e.preventDefault();
-          setShowShortcuts(true);
         }
-      } else if (e.key === 'Escape') {
-        setShowShortcuts(false);
       }
     };
 

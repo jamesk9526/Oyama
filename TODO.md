@@ -515,3 +515,102 @@ None - All Sprint 2 priority features complete!
 ---
 
 **Last Updated:** January 18, 2026
+
+---
+
+## 📌 Consolidated TODO (Jan 19, 2026)
+
+### Agent Improvements
+- [ ] Add agent capability tags (technical monospace styling)
+- [ ] Add agent status/availability (idle/running) in UI cards
+- [ ] Add agent performance stats (runs, success rate, avg latency)
+- [ ] Add agent prompt versioning + history viewer
+- [ ] Add agent duplication with editable name + role
+- [ ] Add agent avatar upload + fallback icon policy
+- [ ] Add agent system prompt validation (length, missing fields)
+- [ ] Add agent filter by capability + provider + model
+- [ ] Add per-agent defaults (temperature/topP/maxTokens)
+- [ ] Add agent test console (quick prompt + output preview)
+
+### From code TODOs
+- [ ] Track agent usage metrics in `app/api/agents/metrics/route.ts` (current: totalUses is hardcoded to 0)
+
+### From ZenTODO (Pending)
+#### Phase 1: Critical (Agents & Crews) - Foundation Polish
+- [ ] Add capability tags with monospace font on AgentCard
+- [ ] Test role badge colors for zen aesthetic
+- [ ] Add smooth transition for menu reveal (opacity/slide)
+- [ ] Verify icon display consistency (emoji vs URL)
+- [ ] Consider max-width for grid container (large screens)
+- [ ] Add subtle grid background pattern (optional)
+- [ ] Improve empty state design (agents/crews)
+- [ ] Add loading skeleton cards for agents/crews
+- [ ] Create professional CrewCard component
+- [ ] Show agent composition visually (badges/avatars)
+- [ ] Display workflow type clearly
+- [ ] Add workflow visualization (arrow/flow)
+- [ ] Better status indicators for crew runs
+- [ ] CrewCard hover animations consistent with AgentCard
+- [ ] Refactor crew list to grid view + spacing improvements
+- [ ] Improve crew empty state
+- [ ] Add crew loading skeletons
+- [ ] Refactor agent/crew creation modal styling
+- [ ] Better form field organization + help text/tooltips
+- [ ] Better button grouping + confirmation step
+- [ ] Consider wizard/step-based creation flow
+
+#### Phase 2: High Priority (Core Experience)
+- [ ] Improve chat message bubble styling + hierarchy
+- [ ] Refine markdown rendering appearance
+- [ ] Improve code block styling/syntax highlighting
+- [ ] Better loading states (typing indicator animations)
+- [ ] Better error message styling
+- [ ] Improve attachment display styling
+- [ ] Improve chat sidebar list styling
+- [ ] Improve search/filter UI for chat sidebar
+- [ ] Better new-chat button placement
+- [ ] Add loading states for conversation list
+- [ ] Improve selection indication for active chat
+- [ ] Floating toolbar: test responsiveness + improve mobile docking
+- [ ] Floating toolbar: accessibility/keyboard navigation
+- [ ] Floating toolbar: better visual feedback for selected agent/model
+- [ ] Settings: reorganize tabs and improve section separation
+- [ ] Settings: improve memory management styling
+- [ ] Settings: improve backup/restore UI
+- [ ] Settings: add more help text/descriptions
+- [ ] Settings: consistent spacing throughout
+- [ ] Home: better setup wizard reminder
+- [ ] Home: improved quick actions + stats/overview
+- [ ] Home: add shortcuts for common actions
+- [ ] Home: improve CTA buttons
+
+#### Phase 3: Medium Priority (Component Library & Details)
+- [ ] Button component audit (sizes, hover/focus, disabled)
+- [ ] Input/form components polish (focus, labels, errors, placeholder)
+- [ ] Badge component refinements (size, contrast, hierarchy)
+- [ ] Modal refinements (header/footer, close button, animations, mobile)
+- [ ] Card refinements (border/hover/shadow consistency)
+- [ ] Select refinements (dropdown styling, option highlight, keyboard nav)
+
+#### Phase 4: Low Priority (Polish & Accessibility)
+- [ ] Accessibility audit (ARIA, keyboard nav, contrast, SR testing)
+- [ ] Performance optimization (re-renders, CSS, images)
+- [ ] Micro-interactions & transitions polish
+- [ ] Theming & color consistency audit
+- [ ] Typography audit (sizes, weights, line-height)
+- [ ] Documentation (JSDoc, design system, usage guide)
+
+---
+
+## ✅ Consolidated Done (Jan 19, 2026)
+### From ZenTODO (Completed)
+- [x] AgentCard refactor (remove playful elements)
+- [x] Subtle hover animations + accent line
+- [x] Better icon container with hover effects
+- [x] Improved typography hierarchy + tracking-wide labels
+- [x] Agent grid spacing improvements (padding/gap)
+- [x] Three-dot menu for secondary actions
+- [x] Created ZenTODO roadmap
+
+### From TODO.md (Completed)
+- [x] See Completed sections above for foundational items already marked done.

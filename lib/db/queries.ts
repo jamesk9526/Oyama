@@ -1,5 +1,94 @@
 import { getDatabase } from './client';
 import type { Agent, Template } from '@/types';
+import crypto from 'crypto';
+
+const tableColumnCache = new Map<string, Set<string>>();
+const tableExistsCache = new Map<string, boolean>();
+
+const getTableColumns = (table: string): Set<string> => {
+  const cached = tableColumnCache.get(table);
+  if (cached) return cached;
+  const db = getDatabase();
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  const columnSet = new Set(columns.map((col) => col.name));
+  tableColumnCache.set(table, columnSet);
+  return columnSet;
+};
+
+const hasColumn = (table: string, column: string): boolean => {
+  return getTableColumns(table).has(column);
+};
+
+const hasTable = (table: string): boolean => {
+  const cached = tableExistsCache.get(table);
+  if (cached !== undefined) return cached;
+  const db = getDatabase();
+  const result = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?")
+    .get(table) as { name?: string } | undefined;
+  const exists = !!result?.name;
+  tableExistsCache.set(table, exists);
+  return exists;
+};
+
+const parseJsonArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.filter((item) => typeof item === 'string') as string[];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+const getOrCreateDefaultWorkspaceId = (): string => {
+  if (!hasTable('workspaces')) return '';
+  const db = getDatabase();
+  const existing = db.prepare('SELECT id FROM workspaces LIMIT 1').get() as { id?: string } | undefined;
+  if (existing?.id) return existing.id;
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const hasSystemPrompt = hasColumn('workspaces', 'system_prompt');
+  const hasSettings = hasColumn('workspaces', 'settings');
+  const hasCreatedAtSnake = hasColumn('workspaces', 'created_at');
+  const hasUpdatedAtSnake = hasColumn('workspaces', 'updated_at');
+  const hasCreatedAtCamel = hasColumn('workspaces', 'createdAt');
+  const hasUpdatedAtCamel = hasColumn('workspaces', 'updatedAt');
+
+  const columns: string[] = ['id', 'name', 'description'];
+  const values: unknown[] = [id, 'Default Workspace', 'Your default workspace for AI agent collaboration'];
+
+  if (hasSystemPrompt) {
+    columns.push('system_prompt');
+    values.push('You are a helpful AI assistant.');
+  }
+  if (hasSettings) {
+    columns.push('settings');
+    values.push(JSON.stringify({ defaultModel: 'llama2', defaultProvider: 'ollama', temperature: 0.7 }));
+  }
+  if (hasCreatedAtSnake) {
+    columns.push('created_at');
+    values.push(now);
+  } else if (hasCreatedAtCamel) {
+    columns.push('createdAt');
+    values.push(now);
+  }
+  if (hasUpdatedAtSnake) {
+    columns.push('updated_at');
+    values.push(now);
+  } else if (hasUpdatedAtCamel) {
+    columns.push('updatedAt');
+    values.push(now);
+  }
+
+  const placeholders = columns.map(() => '?').join(', ');
+  db.prepare(`INSERT INTO workspaces (${columns.join(', ')}) VALUES (${placeholders})`).run(...values);
+  return id;
+};
 
 const normalizeAgent = (agent: any): Agent => {
   let capabilities: Agent['capabilities'] = [];
@@ -14,8 +103,21 @@ const normalizeAgent = (agent: any): Agent => {
     }
   }
 
+  const systemPrompt = agent.systemPrompt ?? agent.system_prompt ?? '';
+  const styleRules = agent.styleRules ?? agent.style_rules ?? undefined;
+  const colorTag = agent.colorTag ?? agent.color_tag ?? undefined;
+  const workspaceId = agent.workspaceId ?? agent.workspace_id ?? '';
+  const createdAt = agent.createdAt ?? agent.created_at ?? '';
+  const updatedAt = agent.updatedAt ?? agent.updated_at ?? '';
+
   return {
     ...agent,
+    systemPrompt,
+    styleRules,
+    colorTag,
+    workspaceId,
+    createdAt,
+    updatedAt,
     capabilities,
   } as Agent;
 };
@@ -36,7 +138,7 @@ export interface CrewRecord {
 export const agentQueries = {
   getAll: () => {
     const db = getDatabase();
-    const rows = db.prepare('SELECT * FROM agents ORDER BY updatedAt DESC').all() as any[];
+    const rows = db.prepare('SELECT * FROM agents ORDER BY updated_at DESC').all() as any[];
     return rows.map(normalizeAgent) as Agent[];
   },
 
@@ -49,16 +151,22 @@ export const agentQueries = {
   create: (agent: Agent) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO agents (id, name, role, systemPrompt, description, capabilities, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO agents (id, name, role, system_prompt, style_rules, model, provider, capabilities, color_tag, icon, workspace_id, version, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       agent.id,
       agent.name,
       agent.role,
       agent.systemPrompt,
-      agent.styleRules || '',
+      agent.styleRules || null,
+      agent.model,
+      agent.provider,
       JSON.stringify(agent.capabilities || []),
+      agent.colorTag || null,
+      agent.icon || null,
+      agent.workspaceId,
+      agent.version,
       agent.createdAt,
       agent.updatedAt
     );
@@ -73,15 +181,21 @@ export const agentQueries = {
     const updated = { ...agent, ...updates, updatedAt: new Date().toISOString() };
     const stmt = db.prepare(`
       UPDATE agents 
-      SET name = ?, role = ?, systemPrompt = ?, description = ?, capabilities = ?, updatedAt = ?
+      SET name = ?, role = ?, system_prompt = ?, style_rules = ?, model = ?, provider = ?, capabilities = ?, color_tag = ?, icon = ?, workspace_id = ?, version = ?, updated_at = ?
       WHERE id = ?
     `);
     stmt.run(
       updated.name,
       updated.role,
       updated.systemPrompt,
-      updated.styleRules || '',
+      updated.styleRules || null,
+      updated.model,
+      updated.provider,
       JSON.stringify(updated.capabilities || []),
+      updated.colorTag || null,
+      updated.icon || null,
+      updated.workspaceId,
+      updated.version,
       updated.updatedAt,
       id
     );
@@ -99,7 +213,7 @@ export const agentQueries = {
 export const templateQueries = {
   getAll: () => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM templates ORDER BY updatedAt DESC').all() as any[];
+    return db.prepare('SELECT * FROM templates ORDER BY updated_at DESC').all() as any[];
   },
 
   getById: (id: string) => {
@@ -161,56 +275,145 @@ export const templateQueries = {
 };
 
 // Crew queries
-const normalizeCrew = (crew: any): CrewRecord => {
-  let agentIds: string[] = [];
-  if (Array.isArray(crew.agentIds)) {
-    agentIds = crew.agentIds;
-  } else if (typeof crew.agentIds === 'string') {
-    try {
-      const parsed = JSON.parse(crew.agentIds);
-      agentIds = Array.isArray(parsed) ? parsed : [];
-    } catch {
-      agentIds = [];
-    }
-  }
+const normalizeCrew = (crew: any, agentsOverride?: string[]): CrewRecord => {
+  const agents = agentsOverride ?? parseJsonArray(crew.agentIds ?? crew.agents ?? []);
+  const workflowType = crew.workflowType ?? crew.workflow_type ?? crew.workflow ?? 'sequential';
+  const createdAt = crew.createdAt ?? crew.created_at ?? '';
+  const updatedAt = crew.updatedAt ?? crew.updated_at ?? '';
 
   return {
     ...crew,
-    agents: agentIds,
-    workflowType: crew.workflowType || 'sequential',
+    agents,
+    workflowType,
     status: crew.status || 'idle',
+    createdAt,
+    updatedAt,
   } as CrewRecord;
 };
 
 export const crewQueries = {
   getAll: () => {
     const db = getDatabase();
-    const rows = db.prepare('SELECT * FROM crews ORDER BY updatedAt DESC').all() as any[];
-    return rows.map(normalizeCrew) as CrewRecord[];
+    const orderByColumn = hasColumn('crews', 'updated_at') ? 'updated_at' : 'updatedAt';
+    const rows = db.prepare(`SELECT * FROM crews ORDER BY ${orderByColumn} DESC`).all() as any[];
+    const useCrewAgentsTable = hasTable('crew_agents') && !hasColumn('crews', 'agents') && !hasColumn('crews', 'agentIds');
+
+    if (!useCrewAgentsTable) {
+      return rows.map((row) => normalizeCrew(row)) as CrewRecord[];
+    }
+
+    return rows.map((row) => {
+      const agents = db
+        .prepare('SELECT agent_id FROM crew_agents WHERE crew_id = ? ORDER BY order_index ASC')
+        .all(row.id)
+        .map((agentRow: { agent_id: string }) => agentRow.agent_id);
+      return normalizeCrew(row, agents);
+    }) as CrewRecord[];
   },
 
   getById: (id: string) => {
     const db = getDatabase();
     const row = db.prepare('SELECT * FROM crews WHERE id = ?').get(id) as any;
-    return row ? (normalizeCrew(row) as CrewRecord) : undefined;
+    if (!row) return undefined;
+
+    const useCrewAgentsTable = hasTable('crew_agents') && !hasColumn('crews', 'agents') && !hasColumn('crews', 'agentIds');
+    if (!useCrewAgentsTable) return normalizeCrew(row) as CrewRecord;
+
+    const agents = db
+      .prepare('SELECT agent_id FROM crew_agents WHERE crew_id = ? ORDER BY order_index ASC')
+      .all(id)
+      .map((agentRow: { agent_id: string }) => agentRow.agent_id);
+    return normalizeCrew(row, agents) as CrewRecord;
   },
 
   create: (crew: CrewRecord) => {
     const db = getDatabase();
-    const stmt = db.prepare(`
-      INSERT INTO crews (id, name, description, agentIds, workflowType, status, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
-      crew.id,
-      crew.name,
-      crew.description,
-      JSON.stringify(crew.agents || []),
-      crew.workflowType,
-      'idle',
-      crew.createdAt,
-      crew.updatedAt
-    );
+    const hasAgentIds = hasColumn('crews', 'agentIds');
+    const hasWorkflowType = hasColumn('crews', 'workflowType');
+    const hasCreatedAtCamel = hasColumn('crews', 'createdAt');
+    const hasUpdatedAtCamel = hasColumn('crews', 'updatedAt');
+    const hasWorkflow = hasColumn('crews', 'workflow');
+    const hasWorkflowTypeSnake = hasColumn('crews', 'workflow_type');
+    const hasCreatedAtSnake = hasColumn('crews', 'created_at');
+    const hasUpdatedAtSnake = hasColumn('crews', 'updated_at');
+    const hasWorkspaceId = hasColumn('crews', 'workspace_id');
+    const hasVersion = hasColumn('crews', 'version');
+    const hasAgentsColumn = hasColumn('crews', 'agents');
+
+    if (hasAgentIds || hasWorkflowType || hasCreatedAtCamel || hasUpdatedAtCamel) {
+      const stmt = db.prepare(`
+        INSERT INTO crews (id, name, description, agentIds, workflowType, status, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      stmt.run(
+        crew.id,
+        crew.name,
+        crew.description,
+        JSON.stringify(crew.agents || []),
+        crew.workflowType,
+        'idle',
+        crew.createdAt,
+        crew.updatedAt
+      );
+      return crew;
+    }
+
+    if (hasAgentsColumn || hasWorkflowTypeSnake) {
+      const workspaceId = hasWorkspaceId ? getOrCreateDefaultWorkspaceId() : null;
+      const stmt = db.prepare(`
+        INSERT INTO crews (id, name, description, workspace_id, workflow_type, agents, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      stmt.run(
+        crew.id,
+        crew.name,
+        crew.description,
+        workspaceId,
+        crew.workflowType,
+        JSON.stringify(crew.agents || []),
+        crew.createdAt,
+        crew.updatedAt
+      );
+      return crew;
+    }
+
+    if (hasWorkflow || hasCreatedAtSnake || hasUpdatedAtSnake || hasWorkspaceId) {
+      const workspaceId = hasWorkspaceId ? getOrCreateDefaultWorkspaceId() : null;
+      const columns = ['id', 'name', 'description', 'workflow'];
+      const values: unknown[] = [crew.id, crew.name, crew.description, crew.workflowType];
+      if (hasWorkspaceId) {
+        columns.push('workspace_id');
+        values.push(workspaceId);
+      }
+      if (hasVersion) {
+        columns.push('version');
+        values.push(1);
+      }
+      if (hasCreatedAtSnake) {
+        columns.push('created_at');
+        values.push(crew.createdAt);
+      }
+      if (hasUpdatedAtSnake) {
+        columns.push('updated_at');
+        values.push(crew.updatedAt);
+      }
+
+      const placeholders = columns.map(() => '?').join(', ');
+      db.prepare(`INSERT INTO crews (${columns.join(', ')}) VALUES (${placeholders})`).run(...values);
+
+      if (hasTable('crew_agents')) {
+        const insertAgent = db.prepare(`
+          INSERT INTO crew_agents (crew_id, agent_id, order_index)
+          VALUES (?, ?, ?)
+        `);
+        (crew.agents || []).forEach((agentId, index) => {
+          insertAgent.run(crew.id, agentId, index);
+        });
+      }
+
+      return crew;
+    }
+
     return crew;
   },
 
@@ -220,20 +423,73 @@ export const crewQueries = {
     if (!crew) return null;
 
     const updated = { ...crew, ...updates, updatedAt: new Date().toISOString() };
-    const stmt = db.prepare(`
-      UPDATE crews 
-      SET name = ?, description = ?, agentIds = ?, workflowType = ?, status = ?, updatedAt = ?
-      WHERE id = ?
-    `);
-    stmt.run(
-      updated.name,
-      updated.description,
-      JSON.stringify(updated.agents || []),
-      updated.workflowType,
-      'idle',
-      updated.updatedAt,
-      id
-    );
+    const hasAgentIds = hasColumn('crews', 'agentIds');
+    const hasWorkflowType = hasColumn('crews', 'workflowType');
+    const hasUpdatedAtCamel = hasColumn('crews', 'updatedAt');
+    const hasWorkflow = hasColumn('crews', 'workflow');
+    const hasWorkflowTypeSnake = hasColumn('crews', 'workflow_type');
+    const hasUpdatedAtSnake = hasColumn('crews', 'updated_at');
+    const hasAgentsColumn = hasColumn('crews', 'agents');
+
+    if (hasAgentIds || hasWorkflowType || hasUpdatedAtCamel) {
+      const stmt = db.prepare(`
+        UPDATE crews 
+        SET name = ?, description = ?, agentIds = ?, workflowType = ?, status = ?, updatedAt = ?
+        WHERE id = ?
+      `);
+      stmt.run(
+        updated.name,
+        updated.description,
+        JSON.stringify(updated.agents || []),
+        updated.workflowType,
+        'idle',
+        updated.updatedAt,
+        id
+      );
+      return updated;
+    }
+
+    if (hasAgentsColumn || hasWorkflowTypeSnake) {
+      const stmt = db.prepare(`
+        UPDATE crews 
+        SET name = ?, description = ?, workflow_type = ?, agents = ?, updated_at = ?
+        WHERE id = ?
+      `);
+      stmt.run(
+        updated.name,
+        updated.description,
+        updated.workflowType,
+        JSON.stringify(updated.agents || []),
+        updated.updatedAt,
+        id
+      );
+      return updated;
+    }
+
+    if (hasWorkflow || hasUpdatedAtSnake) {
+      const columns: string[] = ['name = ?', 'description = ?', 'workflow = ?'];
+      const values: unknown[] = [updated.name, updated.description, updated.workflowType];
+      if (hasUpdatedAtSnake) {
+        columns.push('updated_at = ?');
+        values.push(updated.updatedAt);
+      }
+      values.push(id);
+      db.prepare(`UPDATE crews SET ${columns.join(', ')} WHERE id = ?`).run(...values);
+
+      if (hasTable('crew_agents') && updates.agents) {
+        db.prepare('DELETE FROM crew_agents WHERE crew_id = ?').run(id);
+        const insertAgent = db.prepare(`
+          INSERT INTO crew_agents (crew_id, agent_id, order_index)
+          VALUES (?, ?, ?)
+        `);
+        updates.agents.forEach((agentId, index) => {
+          insertAgent.run(id, agentId, index);
+        });
+      }
+
+      return updated;
+    }
+
     return updated;
   },
 
@@ -277,7 +533,7 @@ export interface Message {
   chatId: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: string;
+  createdAt: string;
 }
 
 export interface Chat {
@@ -344,22 +600,37 @@ const hasChatMessagesColumn = () => {
 export const messageQueries = {
   getAllByChatId: (chatId: string) => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM messages WHERE chatId = ? ORDER BY timestamp ASC').all(chatId) as Message[];
+    const chatIdColumn = hasColumn('messages', 'chat_id') ? 'chat_id' : 'chatId';
+    const createdColumn = hasColumn('messages', 'created_at')
+      ? 'created_at'
+      : hasColumn('messages', 'timestamp')
+        ? 'timestamp'
+        : 'createdAt';
+    return db
+      .prepare(`SELECT * FROM messages WHERE ${chatIdColumn} = ? ORDER BY ${createdColumn} ASC`)
+      .all(chatId) as Message[];
   },
 
   create: (message: Message) => {
     const db = getDatabase();
+    const chatIdColumn = hasColumn('messages', 'chat_id') ? 'chat_id' : 'chatId';
+    const createdColumn = hasColumn('messages', 'created_at')
+      ? 'created_at'
+      : hasColumn('messages', 'timestamp')
+        ? 'timestamp'
+        : 'createdAt';
     const stmt = db.prepare(`
-      INSERT INTO messages (id, chatId, role, content, timestamp)
+      INSERT INTO messages (id, ${chatIdColumn}, role, content, ${createdColumn})
       VALUES (?, ?, ?, ?, ?)
     `);
-    stmt.run(message.id, message.chatId, message.role, message.content, message.timestamp);
+    stmt.run(message.id, message.chatId, message.role, message.content, message.createdAt);
     return message;
   },
 
   deleteByChatId: (chatId: string) => {
     const db = getDatabase();
-    const stmt = db.prepare('DELETE FROM messages WHERE chatId = ?');
+    const chatIdColumn = hasColumn('messages', 'chat_id') ? 'chat_id' : 'chatId';
+    const stmt = db.prepare(`DELETE FROM messages WHERE ${chatIdColumn} = ?`);
     stmt.run(chatId);
   },
 };
@@ -368,7 +639,8 @@ export const messageQueries = {
 export const chatQueries = {
   getAll: () => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM chats ORDER BY updatedAt DESC').all() as Chat[];
+    const orderByColumn = hasColumn('chats', 'updated_at') ? 'updated_at' : 'updatedAt';
+    return db.prepare(`SELECT * FROM chats ORDER BY ${orderByColumn} DESC`).all() as Chat[];
   },
 
   getById: (id: string) => {
@@ -379,6 +651,32 @@ export const chatQueries = {
   create: (chat: Chat) => {
     const db = getDatabase();
     const includeMessages = hasChatMessagesColumn();
+    const usesSnakeCase = hasColumn('chats', 'created_at') || hasColumn('chats', 'updated_at');
+    const agentIdColumn = usesSnakeCase ? 'agent_id' : 'agentId';
+    const createdAtColumn = usesSnakeCase ? 'created_at' : 'createdAt';
+    const updatedAtColumn = usesSnakeCase ? 'updated_at' : 'updatedAt';
+
+    if (usesSnakeCase) {
+      const workspaceId = hasColumn('chats', 'workspace_id') ? getOrCreateDefaultWorkspaceId() : null;
+      const columns = ['id', 'title', agentIdColumn, createdAtColumn, updatedAtColumn];
+      const values: unknown[] = [chat.id, chat.title, chat.agentId || null, chat.createdAt, chat.updatedAt];
+      if (hasColumn('chats', 'model')) {
+        columns.splice(3, 0, 'model');
+        values.splice(3, 0, chat.model || null);
+      }
+      if (hasColumn('chats', 'workspace_id')) {
+        columns.splice(2, 0, 'workspace_id');
+        values.splice(2, 0, workspaceId);
+      }
+      if (includeMessages && hasColumn('chats', 'messages')) {
+        columns.push('messages');
+        values.push('[]');
+      }
+      const placeholders = columns.map(() => '?').join(', ');
+      db.prepare(`INSERT INTO chats (${columns.join(', ')}) VALUES (${placeholders})`).run(...values);
+      return chat;
+    }
+
     const stmt = db.prepare(
       includeMessages
         ? `
@@ -419,12 +717,24 @@ export const chatQueries = {
     if (!chat) return null;
 
     const updated = { ...chat, ...updates, updatedAt: new Date().toISOString() };
+    const usesSnakeCase = hasColumn('chats', 'updated_at') || hasColumn('chats', 'created_at');
+    const agentIdColumn = usesSnakeCase ? 'agent_id' : 'agentId';
+    const updatedAtColumn = usesSnakeCase ? 'updated_at' : 'updatedAt';
+    const setClauses = ['title = ?', `${agentIdColumn} = ?`, `${updatedAtColumn} = ?`];
+    const values: unknown[] = [updated.title, updated.agentId || null, updated.updatedAt];
+
+    if (hasColumn('chats', 'model')) {
+      setClauses.splice(2, 0, 'model = ?');
+      values.splice(2, 0, updated.model || null);
+    }
+
+    values.push(id);
     const stmt = db.prepare(`
       UPDATE chats 
-      SET title = ?, agentId = ?, model = ?, updatedAt = ?
+      SET ${setClauses.join(', ')}
       WHERE id = ?
     `);
-    stmt.run(updated.title, updated.agentId || null, updated.model || null, updated.updatedAt, id);
+    stmt.run(...values);
     return updated;
   },
 

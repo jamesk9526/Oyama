@@ -9,7 +9,15 @@ export type AgentRole =
   | 'coder' 
   | 'qa' 
   | 'summarizer'
-  | 'custom';
+  | 'synthesizer'
+  | 'custom'
+  | 'debugger'
+  | 'analyst'
+  | 'devops'
+  | 'security'
+  | 'designer'
+  | 'backend'
+  | 'product';
 
 export type AgentCapability = 
   | 'web' 
@@ -22,6 +30,7 @@ export interface Agent {
   name: string;
   role: AgentRole;
   systemPrompt: string;
+  bio?: string; // Short description for profile view
   styleRules?: string;
   model: string;
   provider: string;

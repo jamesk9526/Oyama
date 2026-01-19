@@ -30,26 +30,26 @@ export default function Home() {
           <Button 
             size="lg" 
             className="w-full sm:w-auto"
-            onClick={() => router.push('/chats')}
+            onClick={() => router.push('/playground')}
           >
             <MessageSquare className="w-5 h-5 mr-2" />
-            Start New Chat
+            Open Agent Playground
           </Button>
           <Button 
             size="lg" 
             variant="secondary" 
             className="w-full sm:w-auto"
-            onClick={() => router.push('/templates')}
+            onClick={() => router.push('/chats')}
           >
-            Explore Templates
+            Start New Chat
           </Button>
         </div>
 
         <div className="mt-8 sm:mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
           <div className="p-4 rounded-lg bg-secondary border border-border">
-            <h3 className="font-semibold mb-2">Multi-Agent Crews</h3>
+            <h3 className="font-semibold mb-2">Agent Playground</h3>
             <p className="text-sm text-muted-foreground">
-              Orchestrate multiple AI agents to collaborate on complex tasks
+              Run multi-agent workflows with a system-level synthesizer for polished output
             </p>
           </div>
           <div className="p-4 rounded-lg bg-secondary border border-border">

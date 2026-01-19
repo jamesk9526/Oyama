@@ -107,13 +107,13 @@ export function ChatMessage({
   if (role === 'user') {
     return (
       <div className="flex justify-end group zen-message">
-        <div className="max-w-xs lg:max-w-2xl px-4 py-2 rounded-lg bg-primary text-primary-foreground relative zen-message-user">
+        <div className="max-w-xs lg:max-w-2xl px-4 py-3 rounded-xl bg-primary/95 text-primary-foreground relative zen-message-user shadow-sm">
           {isEditing ? (
             <div className="space-y-2">
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full bg-primary-foreground/10 text-primary-foreground rounded p-2 text-sm min-h-[60px] focus:outline-none focus:ring-1 focus:ring-primary-foreground/30"
+                className="w-full bg-primary-foreground/10 text-primary-foreground rounded-lg p-2.5 text-sm min-h-[60px] focus:outline-none focus:ring-2 focus:ring-primary-foreground/30 transition-all"
                 placeholder="Edit your message..."
                 aria-label="Edit message"
                 autoFocus
@@ -121,44 +121,44 @@ export function ChatMessage({
               <div className="flex gap-2">
                 <button
                   onClick={handleEditSave}
-                  className="px-2 py-1 text-xs rounded bg-primary-foreground/20 hover:bg-primary-foreground/30"
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-foreground/20 hover:bg-primary-foreground/30 transition-colors"
                 >
                   Save
                 </button>
                 <button
                   onClick={handleEditCancel}
-                  className="px-2 py-1 text-xs rounded bg-primary-foreground/10 hover:bg-primary-foreground/20"
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-sm break-words whitespace-pre-wrap">{content}</p>
+            <p className="text-sm break-words whitespace-pre-wrap leading-relaxed">{content}</p>
           )}
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-primary-foreground/70">
-              {timestamp.toLocaleTimeString()}
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-primary-foreground/10">
+            <p className="text-xs text-primary-foreground/60 font-medium">
+              {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               {!isEditing && onEdit && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="p-1 rounded hover:bg-primary-foreground/10"
+                  className="p-1.5 rounded-lg hover:bg-primary-foreground/10 transition-colors"
                   title="Edit message"
                 >
-                  <Edit2 className="w-3 h-3" />
+                  <Edit2 className="w-3.5 h-3.5" />
                 </button>
               )}
               <button
                 onClick={() => copyToClipboard(content)}
-                className="p-1 rounded hover:bg-primary-foreground/10"
+                className="p-1.5 rounded-lg hover:bg-primary-foreground/10 transition-colors"
                 title="Copy message"
               >
                 {copiedId === content ? (
-                  <Check className="w-3 h-3" />
+                  <Check className="w-3.5 h-3.5" />
                 ) : (
-                  <Copy className="w-3 h-3" />
+                  <Copy className="w-3.5 h-3.5" />
                 )}
               </button>
             </div>
@@ -170,28 +170,33 @@ export function ChatMessage({
 
   return (
     <div className="flex justify-start group zen-message">
-      <div className="max-w-xs lg:max-w-2xl px-4 py-2 rounded-lg bg-secondary text-foreground border border-border relative zen-message-assistant">
+      <div className="max-w-xs lg:max-w-2xl px-4 py-3 rounded-xl bg-secondary/60 text-foreground border border-border/60 relative zen-message-assistant shadow-sm backdrop-blur-sm">
         <button
           onClick={() => copyToClipboard(content)}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-accent z-10"
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-muted/60 z-10"
           title="Copy message"
         >
           {copiedId === content ? (
-            <Check className="w-3 h-3" />
+            <Check className="w-3.5 h-3.5 text-green-400" />
           ) : (
-            <Copy className="w-3 h-3" />
+            <Copy className="w-3.5 h-3.5" />
           )}
         </button>
         <div className="text-sm break-words prose prose-invert max-w-none prose-sm
-          prose-headings:text-foreground prose-headings:font-bold
-          prose-p:text-foreground prose-p:my-1
+          prose-headings:text-foreground prose-headings:font-semibold prose-headings:tracking-tight
+          prose-h1:text-2xl prose-h1:mt-4 prose-h1:mb-2
+          prose-h2:text-xl prose-h2:mt-3 prose-h2:mb-2
+          prose-h3:text-lg prose-h3:mt-3 prose-h3:mb-1.5
+          prose-p:text-foreground prose-p:my-2 prose-p:leading-relaxed
           prose-a:text-primary prose-a:underline
+          prose-strong:text-foreground prose-strong:font-semibold
           prose-code:bg-background prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-red-400
           prose-pre:bg-background prose-pre:border prose-pre:border-border prose-pre:p-0 prose-pre:overflow-hidden
-          prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic
-          prose-ul:list-disc prose-ul:list-inside
-          prose-ol:list-decimal prose-ol:list-inside
-          prose-li:my-0
+          prose-hr:border-border/60
+          prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-foreground/80
+          prose-ul:list-disc prose-ul:list-inside prose-ul:my-2
+          prose-ol:list-decimal prose-ol:list-inside prose-ol:my-2
+          prose-li:my-1
           prose-table:border-collapse prose-table:w-full
           prose-th:border prose-th:border-border prose-th:px-2 prose-th:py-1 prose-th:text-left prose-th:bg-muted
           prose-td:border prose-td:border-border prose-td:px-2 prose-td:py-1">
@@ -217,9 +222,9 @@ export function ChatMessage({
                 }
 
                 return (
-                  <div className="my-2 rounded-lg overflow-hidden bg-background border border-border">
-                    <div className="flex items-center justify-between px-4 py-2 bg-muted border-b border-border">
-                      <span className="text-xs font-mono text-muted-foreground">
+                  <div className="my-3 rounded-lg overflow-hidden bg-background/80 border border-border/60 shadow-sm">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-muted/60 border-b border-border/60">
+                      <span className="text-xs font-mono font-medium text-muted-foreground/90 uppercase tracking-wide">
                         {language}
                       </span>
                       <div className="flex gap-2">
@@ -227,7 +232,7 @@ export function ChatMessage({
                           <button
                             onClick={() => executeCode(code, codeId)}
                             disabled={execState?.running}
-                            className="px-2 py-1 text-xs rounded bg-green-600/20 hover:bg-green-600/30 text-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1 text-xs font-medium rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                           >
                             <Play className="w-3 h-3" />
                             {execState?.running ? 'Running...' : 'Run'}
@@ -235,12 +240,12 @@ export function ChatMessage({
                         )}
                         <button
                           onClick={() => copyToClipboard(code)}
-                          className="px-2 py-1 text-xs rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors flex items-center gap-1"
+                          className="px-2.5 py-1 text-xs font-medium rounded-md bg-primary/15 hover:bg-primary/25 text-primary transition-all flex items-center gap-1.5"
                         >
                           {copiedId === code ? (
                             <>
                               <Check className="w-3 h-3" />
-                              Copied!
+                              Copied
                             </>
                           ) : (
                             <>
@@ -251,39 +256,39 @@ export function ChatMessage({
                         </button>
                       </div>
                     </div>
-                    <pre className="p-4 overflow-x-auto">
+                    <pre className="p-4 overflow-x-auto text-sm">
                       <code className={className} {...props}>
                         {children}
                       </code>
                     </pre>
                     {execState?.result && (
-                      <div className="border-t border-border">
+                      <div className="border-t border-border/60">
                         {execState.result.success ? (
                           <>
                             {execState.result.stdout && (
-                              <div className="p-3 bg-background/50">
-                                <div className="text-xs font-semibold text-green-400 mb-1">Output:</div>
-                                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-40 text-foreground font-mono">
+                              <div className="p-3 bg-background/60">
+                                <div className="text-xs font-semibold text-emerald-400/90 mb-1.5 uppercase tracking-wide">Output</div>
+                                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-40 text-foreground/90 font-mono leading-relaxed">
                                   {execState.result.stdout}
                                 </pre>
                               </div>
                             )}
                             {execState.result.stderr && (
-                              <div className="p-3 bg-background/50 border-t border-border">
-                                <div className="text-xs font-semibold text-yellow-400 mb-1">Warnings/Info:</div>
-                                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-40 text-yellow-400 font-mono">
+                              <div className="p-3 bg-background/60 border-t border-border/60">
+                                <div className="text-xs font-semibold text-amber-400/90 mb-1.5 uppercase tracking-wide">Warnings</div>
+                                <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-40 text-amber-400/90 font-mono leading-relaxed">
                                   {execState.result.stderr}
                                 </pre>
                               </div>
                             )}
-                            <div className="px-3 py-2 bg-background/30 border-t border-border text-xs text-muted-foreground">
+                            <div className="px-3 py-2 bg-background/40 border-t border-border/40 text-xs text-muted-foreground/70">
                               Executed in {execState.result.executionTime}ms
                             </div>
                           </>
                         ) : (
-                          <div className="p-3 bg-destructive/10">
-                            <div className="text-xs font-semibold text-destructive mb-1">Error:</div>
-                            <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-40 text-destructive font-mono">
+                          <div className="p-3 bg-destructive/5">
+                            <div className="text-xs font-semibold text-destructive/90 mb-1.5 uppercase tracking-wide">Error</div>
+                            <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-40 text-destructive/90 font-mono leading-relaxed">
                               {execState.result.error || execState.result.stderr}
                             </pre>
                           </div>
@@ -306,12 +311,12 @@ export function ChatMessage({
             {content}
           </ReactMarkdown>
         </div>
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40">
-          <p className="text-xs text-muted-foreground">
-            {timestamp.toLocaleTimeString()}
+        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/40">
+          <p className="text-xs text-muted-foreground/70 font-medium">
+            {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             {isStreaming && (
-              <span className="ml-2 inline-flex items-center gap-1 text-primary">
-                <span className="animate-pulse">●</span> Streaming...
+              <span className="ml-2 inline-flex items-center gap-1.5 text-primary">
+                <span className="animate-pulse text-base leading-none">●</span> Streaming...
               </span>
             )}
           </p>
@@ -320,35 +325,35 @@ export function ChatMessage({
               <>
                 <button
                   onClick={() => onReaction('like')}
-                  className={`p-1 rounded transition-colors ${
+                  className={`p-1.5 rounded-lg transition-all duration-200 ${
                     reaction === 'like'
-                      ? 'bg-green-500/20 text-green-500'
-                      : 'hover:bg-accent opacity-60 hover:opacity-100'
+                      ? 'bg-emerald-500/15 text-emerald-400'
+                      : 'hover:bg-muted/60 opacity-50 hover:opacity-100'
                   }`}
                   title="Helpful response"
                 >
-                  <ThumbsUp className="w-3 h-3" />
+                  <ThumbsUp className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => onReaction('dislike')}
-                  className={`p-1 rounded transition-colors ${
+                  className={`p-1.5 rounded-lg transition-all duration-200 ${
                     reaction === 'dislike'
-                      ? 'bg-red-500/20 text-red-500'
-                      : 'hover:bg-accent opacity-60 hover:opacity-100'
+                      ? 'bg-red-500/15 text-red-400'
+                      : 'hover:bg-muted/60 opacity-50 hover:opacity-100'
                   }`}
                   title="Unhelpful response"
                 >
-                  <ThumbsDown className="w-3 h-3" />
+                  <ThumbsDown className="w-3.5 h-3.5" />
                 </button>
               </>
             )}
             {onRegenerate && isLatest && !isStreaming && (
               <button
                 onClick={onRegenerate}
-                className="p-1 rounded hover:bg-accent opacity-60 hover:opacity-100 transition-opacity"
+                className="p-1.5 rounded-lg hover:bg-muted/60 opacity-50 hover:opacity-100 transition-all duration-200"
                 title="Regenerate response"
               >
-                <RefreshCw className="w-3 h-3" />
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
             )}
           </div>

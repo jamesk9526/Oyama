@@ -61,6 +61,41 @@ const rolePresets: Record<AgentRole, { icon: string; prompt: string; description
     prompt: 'You are a skilled summarizer. Extract key points, condense information while retaining essential details, and present summaries clearly.',
     description: 'Summarizes and distills information',
   },
+  debugger: {
+    icon: '🧩',
+    prompt: 'You are a debugging specialist. Identify root causes, propose fixes, and outline verification steps. Be systematic and clear.',
+    description: 'Investigates and fixes issues',
+  },
+  analyst: {
+    icon: '📈',
+    prompt: 'You are a data analyst. Interpret data, surface insights, and recommend actions with supporting evidence.',
+    description: 'Analyzes data and trends',
+  },
+  devops: {
+    icon: '⚙️',
+    prompt: 'You are a DevOps expert. Focus on reliability, automation, CI/CD, and scalable infrastructure practices.',
+    description: 'Builds and maintains infrastructure',
+  },
+  security: {
+    icon: '🔐',
+    prompt: 'You are a security specialist. Identify risks, recommend mitigations, and ensure secure-by-default practices.',
+    description: 'Assesses security and risk',
+  },
+  designer: {
+    icon: '🎨',
+    prompt: 'You are a product designer. Create user-centered designs, clear UI guidance, and accessible experiences.',
+    description: 'Designs user experiences',
+  },
+  backend: {
+    icon: '🧱',
+    prompt: 'You are a backend engineer. Build reliable APIs, data models, and scalable services with strong testing.',
+    description: 'Builds backend services',
+  },
+  product: {
+    icon: '📦',
+    prompt: 'You are a product lead. Define outcomes, prioritize work, and align stakeholders on a clear roadmap.',
+    description: 'Leads product direction',
+  },
   custom: {
     icon: '⚙️',
     prompt: '',

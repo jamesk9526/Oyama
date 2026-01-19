@@ -25,6 +25,7 @@ export default function SettingsPage() {
   const [providersSaved, setProvidersSaved] = useState(false);
   const [llmSaved, setLlmSaved] = useState(false);
   const [promptSaved, setPromptSaved] = useState(false);
+  const [synthPromptSaved, setSynthPromptSaved] = useState(false);
   const [providersSaving, setProvidersSaving] = useState(false);
 
   const [memories, setMemories] = useState<Array<{ id: string; content: string; type: string; importance: number }>>([]);
@@ -35,6 +36,8 @@ export default function SettingsPage() {
   const [addingMemory, setAddingMemory] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [removingDefaults, setRemovingDefaults] = useState(false);
+  const [defaultsRemovalMessage, setDefaultsRemovalMessage] = useState('');
 
   // Local form state
   const [workspaceName, setWorkspaceName] = useState(settings.workspaceName);
@@ -43,8 +46,10 @@ export default function SettingsPage() {
   const [ollamaUrl, setOllamaUrl] = useState(settings.ollamaUrl);
   const [ollamaModel, setOllamaModel] = useState(settings.ollamaModel);
   const [systemPrompt, setSystemPrompt] = useState(settings.systemPrompt);
+  const [synthesizerPrompt, setSynthesizerPrompt] = useState(settings.synthesizerPrompt);
   const [temperature, setTemperature] = useState(settings.temperature);
   const [topP, setTopP] = useState(settings.topP);
+  const [enableRunNotifications, setEnableRunNotifications] = useState(settings.enableRunNotifications);
 
   const isWorkspaceDirty =
     workspaceName !== settings.workspaceName ||
@@ -60,6 +65,7 @@ export default function SettingsPage() {
     topP !== settings.topP;
 
   const isPromptDirty = systemPrompt !== settings.systemPrompt;
+  const isSynthPromptDirty = synthesizerPrompt !== settings.synthesizerPrompt;
 
   useEffect(() => {
     setWorkspaceName(settings.workspaceName);
@@ -107,6 +113,14 @@ export default function SettingsPage() {
   useEffect(() => {
     setSystemPrompt(settings.systemPrompt);
   }, [settings.systemPrompt]);
+
+  useEffect(() => {
+    setSynthesizerPrompt(settings.synthesizerPrompt);
+  }, [settings.synthesizerPrompt]);
+
+  useEffect(() => {
+    setEnableRunNotifications(settings.enableRunNotifications);
+  }, [settings.enableRunNotifications]);
 
   // Fetch Ollama models on mount or when URL changes
   useEffect(() => {
@@ -218,6 +232,24 @@ export default function SettingsPage() {
     setTimeout(() => setPromptSaved(false), 2000);
   };
 
+  const handleSaveSynthPrompt = () => {
+    settings.updateSettings({
+      synthesizerPrompt,
+    });
+    setSynthPromptSaved(true);
+    setTimeout(() => setSynthPromptSaved(false), 2000);
+  };
+
+  const handleToggleNotifications = async (enabled: boolean) => {
+    setEnableRunNotifications(enabled);
+    settings.setEnableRunNotifications(enabled);
+    if (enabled && typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    }
+  };
+
   const handleSaveLLMSettings = () => {
     settings.updateSettings({
       temperature,
@@ -274,6 +306,27 @@ export default function SettingsPage() {
       alert('Failed to read backup file');
     } finally {
       setRestoreLoading(false);
+    }
+  };
+
+  const handleRemoveDefaults = async () => {
+    if (!confirm('Remove all default agents and crews? This cannot be undone.')) return;
+    setRemovingDefaults(true);
+    setDefaultsRemovalMessage('');
+    try {
+      const response = await fetch('/api/defaults', { method: 'DELETE' });
+      if (!response.ok) {
+        throw new Error('Failed to remove default data');
+      }
+      const result = await response.json();
+      setDefaultsRemovalMessage(
+        `Removed ${result.removedAgents ?? 0} agents and ${result.removedCrews ?? 0} crews.`
+      );
+    } catch (err) {
+      console.error('Failed to remove default data:', err);
+      setDefaultsRemovalMessage('Failed to remove default agents and crews.');
+    } finally {
+      setRemovingDefaults(false);
     }
   };
 
@@ -387,6 +440,8 @@ export default function SettingsPage() {
                           checked={settings.autoScrollToLatest}
                           onChange={(e) => settings.setAutoScrollToLatest(e.target.checked)}
                           className="sr-only peer"
+                          aria-label="Auto-scroll to latest message"
+                          title="Auto-scroll to latest message"
                         />
                         <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                       </label>
@@ -680,6 +735,35 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Run Notifications</CardTitle>
+                  <CardDescription>
+                    Desktop notifications when crew runs complete
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm">Enable run notifications</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Send a notification when a crew run completes or fails.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={enableRunNotifications}
+                      onChange={(e) => handleToggleNotifications(e.target.checked)}
+                      className="h-4 w-4"
+                      aria-label="Enable run notifications"
+                      title="Enable run notifications"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    You may be prompted by the system to allow notifications.
+                  </p>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Prompts Tab */}
@@ -704,6 +788,31 @@ export default function SettingsPage() {
                       Save Prompt
                     </Button>
                     {promptSaved && (
+                      <p className="text-xs text-muted-foreground">Saved</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Synthesizer Prompt</CardTitle>
+                  <CardDescription>
+                    Controls the final synthesized response in Agent Playground
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    value={synthesizerPrompt}
+                    onChange={(e) => setSynthesizerPrompt(e.target.value)}
+                    rows={10}
+                    className="font-mono"
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button onClick={handleSaveSynthPrompt} disabled={!isSynthPromptDirty}>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save Synthesizer Prompt
+                    </Button>
+                    {synthPromptSaved && (
                       <p className="text-xs text-muted-foreground">Saved</p>
                     )}
                   </div>
@@ -783,6 +892,8 @@ export default function SettingsPage() {
                             value={newMemoryImportance}
                             onChange={(e) => setNewMemoryImportance(parseInt(e.target.value))}
                             className="w-full"
+                            aria-label={`Memory importance ${newMemoryImportance}`}
+                            title="Memory importance"
                           />
                         </div>
                       </div>
@@ -961,6 +1072,33 @@ export default function SettingsPage() {
                     <p>✓ Backup files are portable and can be used for migration or recovery</p>
                     <p>✓ Restore can be performed at any time without losing existing data</p>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Default Data</CardTitle>
+                  <CardDescription>
+                    Remove the built-in starter agents and crews from your workspace.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    This action deletes only the default agents and crews added by the seed data.
+                    Your custom agents and crews remain intact.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    onClick={handleRemoveDefaults}
+                    disabled={removingDefaults}
+                    className="w-full"
+                  >
+                    {removingDefaults ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {removingDefaults ? 'Removing Defaults...' : 'Remove Default Agents & Crews'}
+                  </Button>
+                  {defaultsRemovalMessage ? (
+                    <p className="text-xs text-muted-foreground">{defaultsRemovalMessage}</p>
+                  ) : null}
                 </CardContent>
               </Card>
             </TabsContent>

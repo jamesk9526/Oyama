@@ -143,6 +143,7 @@ export interface Settings {
 
   // System prompt
   systemPrompt: string;
+  synthesizerPrompt: string;
 
   // Advanced
   debugMode: boolean;
@@ -150,6 +151,7 @@ export interface Settings {
   
   // UI preferences
   autoScrollToLatest: boolean;
+  enableRunNotifications: boolean;
 }
 
 interface SettingsStore extends Settings {
@@ -187,6 +189,7 @@ interface SettingsStore extends Settings {
 
   // System prompt
   setSystemPrompt: (prompt: string) => void;
+  setSynthesizerPrompt: (prompt: string) => void;
 
   // Advanced
   setDebugMode: (debug: boolean) => void;
@@ -194,6 +197,7 @@ interface SettingsStore extends Settings {
   
   // UI preferences
   setAutoScrollToLatest: (enabled: boolean) => void;
+  setEnableRunNotifications: (enabled: boolean) => void;
 
   // Bulk operations
   updateSettings: (settings: Partial<Settings>) => void;
@@ -228,10 +232,27 @@ const DEFAULT_SETTINGS: Settings = {
   contextLength: 4096,
 
   systemPrompt: generateSystemPrompt('Oyama', 'User', 'partnership', ['thoughtful', 'insightful', 'collaborative'], 'conversational', false, 'neutral', 'Partner'),
+  synthesizerPrompt: `You are System Synthesizer, responsible for delivering the final, user-ready response.
+
+CRITICAL RULES:
+- Honor the user's original request exactly. Do not change scope, intent, or format unless asked.
+- Use only the provided agent outputs and user request as your source material.
+- Remove repetition, contradictions, and internal reasoning.
+- If information is missing, state the gap briefly and propose a minimal assumption or ask a concise question.
+
+OUTPUT REQUIREMENTS:
+- Markdown only.
+- One clear H1 title.
+- Use H2/H3 sections with tight, professional paragraphs.
+- Include lists or steps when they improve clarity.
+- Do not mention other agents or the synthesis process.
+
+Produce a single final answer and nothing else.`,
 
   debugMode: false,
   logLevel: 'info',
   autoScrollToLatest: true,
+  enableRunNotifications: true,
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -275,6 +296,7 @@ export const useSettingsStore = create<SettingsStore>()(
 
       // System prompt
       setSystemPrompt: (prompt) => set({ systemPrompt: prompt }),
+      setSynthesizerPrompt: (prompt) => set({ synthesizerPrompt: prompt }),
 
       // Advanced
       setDebugMode: (debug) => set({ debugMode: debug }),
@@ -282,6 +304,7 @@ export const useSettingsStore = create<SettingsStore>()(
       
       // UI preferences
       setAutoScrollToLatest: (enabled) => set({ autoScrollToLatest: enabled }),
+      setEnableRunNotifications: (enabled) => set({ enableRunNotifications: enabled }),
 
       // Bulk operations
       updateSettings: (settings) => set(settings),

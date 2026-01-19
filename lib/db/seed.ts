@@ -1,6 +1,7 @@
 import db from './index';
 import { v4 as uuidv4 } from 'uuid';
 import type { Workspace, Agent, Template } from '@/types';
+import { DEFAULT_AGENTS, DEFAULT_CREWS } from './default-data';
 
 export const seedDatabase = () => {
   console.log('🌱 Seeding database...');
@@ -28,68 +29,61 @@ export const seedDatabase = () => {
 
   console.log('   ✓ Created default workspace');
 
-  // Create starter agents
-  const agents: Partial<Agent>[] = [
-    {
-      id: uuidv4(),
-      name: 'Research Assistant',
-      role: 'researcher',
-      systemPrompt: 'You are a thorough research assistant. Gather comprehensive information, cite sources, and present findings in a structured format.',
-      model: 'llama2',
-      provider: 'ollama',
-      capabilities: ['web'],
-      colorTag: '#6366f1',
-      icon: '🔍',
-      workspaceId,
-    },
-    {
-      id: uuidv4(),
-      name: 'Content Writer',
-      role: 'writer',
-      systemPrompt: 'You are a skilled content writer. Create engaging, well-structured content that is clear and compelling.',
-      model: 'llama2',
-      provider: 'ollama',
-      capabilities: [],
-      colorTag: '#8b5cf6',
-      icon: '✍️',
-      workspaceId,
-    },
-    {
-      id: uuidv4(),
-      name: 'Code Reviewer',
-      role: 'coder',
-      systemPrompt: 'You are an expert code reviewer. Analyze code for bugs, performance issues, and best practices. Provide actionable feedback.',
-      model: 'llama2',
-      provider: 'ollama',
-      capabilities: ['code'],
-      colorTag: '#10b981',
-      icon: '💻',
-      workspaceId,
-    },
-  ];
-
-  for (const agent of agents) {
+  // Create default agents
+  console.log('   📦 Installing default agents...');
+  for (const agentData of DEFAULT_AGENTS) {
     db.prepare(`
       INSERT INTO agents (id, name, role, system_prompt, model, provider, capabilities, color_tag, icon, workspace_id, version, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      agent.id,
-      agent.name,
-      agent.role,
-      agent.systemPrompt,
-      agent.model,
-      agent.provider,
-      JSON.stringify(agent.capabilities),
-      agent.colorTag,
-      agent.icon,
-      agent.workspaceId,
+      agentData.id,
+      agentData.name,
+      agentData.role,
+      agentData.systemPrompt,
+      'gpt-4',
+      'openai',
+      JSON.stringify([]),
+      '#10b981',
+      agentData.avatar,
+      workspaceId,
       1,
       now,
       now
     );
+    console.log(`      ✓ ${agentData.name} (${agentData.role})`);
   }
 
-  console.log(`   ✓ Created ${agents.length} starter agents`);
+  // Create default crews
+  console.log('   🎯 Creating default crews...');
+  for (const crewData of DEFAULT_CREWS) {
+    // Insert crew
+    db.prepare(`
+      INSERT INTO crews (id, name, description, workflow, workspace_id, version, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      crewData.id,
+      crewData.name,
+      crewData.description,
+      crewData.workflow,
+      workspaceId,
+      1,
+      now,
+      now
+    );
+
+    // Insert crew agents
+    for (const agent of crewData.agents) {
+      db.prepare(`
+        INSERT INTO crew_agents (crew_id, agent_id, order_index)
+        VALUES (?, ?, ?)
+      `).run(
+        crewData.id,
+        agent.agentId,
+        agent.order
+      );
+    }
+    console.log(`      ✓ ${crewData.name} (${crewData.agents.length} agents)`);
+  }
 
   // Create starter templates
   const templates: Partial<Template>[] = [

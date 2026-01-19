@@ -9,6 +9,7 @@ import { Plus, Play, Edit, Trash2, Grid3X3, Copy } from 'lucide-react';
 import { useCrewsStore, type Crew } from '@/lib/stores/crews';
 import { useSettingsStore } from '@/lib/stores/settings';
 import { CrewExecutionModal } from '@/components/crews/CrewExecutionModal';
+import { CrewCard } from '@/components/crews/CrewCard';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -224,109 +225,72 @@ export default function CrewsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">Loading crews...</p>
-          </div>
-        ) : crews.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Grid3X3 className="w-12 h-12 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-semibold mb-1">No crews yet</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-              Create a crew to orchestrate multiple AI agents working together on
-              complex tasks.
-            </p>
-            <Button onClick={handleCreateCrew}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Crew
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {crews.map((crew) => (
-              <Card key={crew.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-base">{crew.name}</CardTitle>
-                      <CardDescription className="text-xs mt-1">
-                        {crew.agents.length} agent{crew.agents.length !== 1 ? 's' : ''}
-                      </CardDescription>
+      <div className="flex-1 overflow-y-auto p-6 bg-muted/20 relative">
+        {/* Optional subtle dot grid pattern */}
+        <div className="absolute inset-0 opacity-[0.015] pointer-events-none bg-[radial-gradient(circle,_rgb(var(--foreground))_1px,_transparent_1px)] bg-[length:24px_24px]" />
+        <div className="max-w-screen-2xl mx-auto">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-lg border border-border/60 bg-background/60">
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted/40" />
+                        <div className="space-y-2">
+                          <div className="h-3 w-28 bg-muted/40 rounded" />
+                          <div className="h-4 w-16 bg-muted/30 rounded" />
+                        </div>
+                      </div>
+                      <div className="h-8 w-8 rounded bg-muted/30" />
                     </div>
-                    <Badge className={getStatusColor(crew.status)}>
-                      {crew.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">{crew.description}</p>
-
-                  {/* Workflow Type */}
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Workflow Type</p>
-                    <Badge variant="default" className="text-xs">
-                      {getWorkflowLabel(crew.workflowType)}
-                    </Badge>
-                  </div>
-
-                  {/* Last Run */}
-                  {crew.lastRun && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">
-                        Last run: {new Date(crew.lastRun).toLocaleDateString()}
-                      </p>
+                    <div className="h-px bg-border/30" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 bg-muted/30 rounded" />
+                      <div className="h-4 w-24 bg-muted/30 rounded" />
                     </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() => handleRunCrew(crew)}
-                      className="flex-1"
-                      title="Run crew"
-                      aria-label="Run crew"
-                    >
-                      <Play className="w-3 h-3 mr-1" />
-                      <span className="hidden sm:inline">Run</span>
-                      <span className="sm:hidden">Run</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleCloneCrew(crew)}
-                      title="Clone crew"
-                      aria-label="Clone crew"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleEditCrew(crew)}
-                      title="Edit crew"
-                      aria-label="Edit crew"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleDeleteCrew(crew)}
-                      title="Delete crew"
-                      aria-label="Delete crew"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    <div className="space-y-2">
+                      <div className="h-3 w-24 bg-muted/30 rounded" />
+                      <div className="flex gap-2">
+                        <div className="h-6 w-20 bg-muted/30 rounded" />
+                        <div className="h-6 w-20 bg-muted/30 rounded" />
+                      </div>
+                    </div>
+                    <div className="h-8 w-full bg-muted/30 rounded" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                </div>
+              ))}
+            </div>
+          ) : crews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-muted/60 to-muted/40 border border-border/40 flex items-center justify-center mb-6">
+                <Grid3X3 className="w-10 h-10 text-muted-foreground/70" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 tracking-tight">No crews yet</h3>
+              <p className="text-sm text-muted-foreground/80 mb-6 max-w-sm leading-relaxed">
+                Create a crew to orchestrate multiple AI agents working together on complex tasks with powerful workflow automation.
+              </p>
+              <Button onClick={handleCreateCrew} size="sm" className="font-semibold">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Your First Crew
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {crews.map((crew) => (
+                <CrewCard
+                  key={crew.id}
+                  crew={crew}
+                  agents={agents}
+                  onEdit={handleEditCrew}
+                  onDelete={handleDeleteCrew}
+                  onRun={handleRunCrew}
+                  onClone={handleCloneCrew}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Execution Modal */}

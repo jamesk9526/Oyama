@@ -96,12 +96,12 @@ export function ConversationSidebar({
 
   if (loading) {
     return (
-      <div className="w-64 bg-secondary/30 border-r border-border p-4">
+      <div className="w-64 bg-secondary/40 backdrop-blur-sm border-r border-border/60 p-4">
         <div className="animate-pulse space-y-3">
-          <div className="h-8 bg-secondary rounded"></div>
+          <div className="h-9 bg-muted/40 rounded-lg"></div>
           <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 bg-secondary rounded"></div>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-14 bg-muted/30 rounded-lg"></div>
             ))}
           </div>
         </div>
@@ -110,12 +110,12 @@ export function ConversationSidebar({
   }
 
   return (
-    <div className="w-64 bg-secondary/30 border-r border-border flex flex-col h-full">
+    <div className="w-64 bg-secondary/40 backdrop-blur-sm border-r border-border/60 flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border/60">
         <Button
           onClick={onNewConversation}
-          className="w-full justify-start"
+          className="w-full justify-start font-semibold"
           size="sm"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -124,22 +124,24 @@ export function ConversationSidebar({
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-3">
         {conversations.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No conversations yet</p>
-            <p className="text-xs">Start a new chat to begin</p>
+          <div className="text-center text-muted-foreground py-12 px-2">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-muted/60 to-muted/40 border border-border/40 flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="w-8 h-8 text-muted-foreground/70" />
+            </div>
+            <p className="text-sm font-semibold mb-1">No conversations yet</p>
+            <p className="text-xs text-muted-foreground/70 leading-relaxed">Start a new chat to begin your conversation</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {conversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`group relative rounded-lg border transition-colors cursor-pointer ${
+                className={`group relative rounded-lg border transition-all duration-200 cursor-pointer ${
                   currentChatId === conversation.id
-                    ? 'bg-primary/10 border-primary/20'
-                    : 'bg-background hover:bg-secondary/50 border-border'
+                    ? 'bg-primary/10 border-primary/30 shadow-sm'
+                    : 'bg-background/60 hover:bg-secondary/60 border-border/60 hover:border-border hover:shadow-sm'
                 }`}
               >
                 {editingId === conversation.id ? (
@@ -153,7 +155,7 @@ export function ConversationSidebar({
                       }}
                       onBlur={handleSaveEdit}
                       autoFocus
-                      className="text-sm"
+                      className="text-sm h-8"
                     />
                   </div>
                 ) : (
@@ -162,16 +164,16 @@ export function ConversationSidebar({
                       className="p-3"
                       onClick={() => onSelectConversation(conversation.id)}
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
+                          <p className="text-sm font-medium truncate leading-snug mb-1">
                             {conversation.title}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground/70 font-medium">
                             {formatDate(conversation.updatedAt)}
                           </p>
                         </div>
-                        <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1 ml-2">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -179,9 +181,10 @@ export function ConversationSidebar({
                               e.stopPropagation();
                               handleStartEdit(conversation);
                             }}
-                            className="h-6 w-6 p-0"
+                            className="h-7 w-7 p-0 hover:bg-muted/60"
+                            title="Rename conversation"
                           >
-                            <Edit2 className="w-3 h-3" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             size="sm"
@@ -190,9 +193,10 @@ export function ConversationSidebar({
                               e.stopPropagation();
                               handleDelete(conversation.id);
                             }}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Delete conversation"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>

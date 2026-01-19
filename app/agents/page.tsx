@@ -282,41 +282,79 @@ export default function AgentsPage() {
       </div>
 
       {/* Agents grid */}
-      <div className="flex-1 overflow-y-auto p-6 bg-muted/20">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">Loading agents...</p>
-          </div>
-        ) : filteredAgents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAgents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onTest={handleTest}
-                onDuplicate={handleDuplicate}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Users className="w-12 h-12 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-semibold mb-1">No agents found</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {searchQuery || selectedRole
-                ? 'Try adjusting your filters'
-                : 'Get started by creating your first agent'}
-            </p>
-            {!searchQuery && !selectedRole && (
-              <Button onClick={() => setBuilderOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Agent
-              </Button>
-            )}
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto p-6 bg-muted/20 relative">
+        {/* Optional subtle dot grid pattern */}
+        <div className="absolute inset-0 opacity-[0.015] pointer-events-none bg-[radial-gradient(circle,_rgb(var(--foreground))_1px,_transparent_1px)] bg-[length:24px_24px]" />
+        <div className="max-w-screen-2xl mx-auto">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-lg border border-border/60 bg-background/60">
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted/40" />
+                        <div className="space-y-2">
+                          <div className="h-3 w-28 bg-muted/40 rounded" />
+                          <div className="h-4 w-16 bg-muted/30 rounded" />
+                        </div>
+                      </div>
+                      <div className="h-8 w-8 rounded bg-muted/30" />
+                    </div>
+                    <div className="h-px bg-border/30" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 bg-muted/30 rounded" />
+                      <div className="flex gap-2">
+                        <div className="h-6 w-16 bg-muted/30 rounded" />
+                        <div className="h-6 w-24 bg-muted/30 rounded" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-24 bg-muted/30 rounded" />
+                      <div className="flex gap-2">
+                        <div className="h-6 w-20 bg-muted/30 rounded" />
+                        <div className="h-6 w-20 bg-muted/30 rounded" />
+                        <div className="h-6 w-20 bg-muted/30 rounded" />
+                      </div>
+                    </div>
+                    <div className="h-8 w-full bg-muted/30 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredAgents.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredAgents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onTest={handleTest}
+                  onDuplicate={handleDuplicate}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-muted/60 to-muted/40 border border-border/40 flex items-center justify-center mb-6">
+                <Users className="w-10 h-10 text-muted-foreground/70" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 tracking-tight">No agents found</h3>
+              <p className="text-sm text-muted-foreground/80 mb-6 max-w-sm leading-relaxed">
+                {searchQuery || selectedRole
+                  ? 'Try adjusting your search or filters to discover agents'
+                  : 'Build your first AI agent to get started with automated workflows and intelligent assistance'}
+              </p>
+              {!searchQuery && !selectedRole && (
+                <Button onClick={() => setBuilderOpen(true)} size="sm" className="font-semibold">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Agent
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Agent Builder Modal */}

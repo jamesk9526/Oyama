@@ -6,9 +6,13 @@ import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Loader, Play, CheckCircle, XCircle, Clock, Trash2, Search, Download, Filter, TrendingUp } from 'lucide-react';
+import { Loader, Send, StopCircle, CheckCircle, XCircle, Trash2, Search, Download, TrendingUp, Users, User, RefreshCw, Settings2 } from 'lucide-react';
 import { ChatMessage } from '@/components/chat/ChatMessage';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { Label } from '@/components/ui/Label';
 import { useSettingsStore } from '@/lib/stores/settings';
+import { useAgentsStore } from '@/lib/stores/agents';
 
 interface CrewRunRecord {
   id: string;
@@ -41,11 +45,28 @@ interface CrewRunStepRecord {
   createdAt: string;
 }
 
+interface ChatMode {
+  type: 'round-robin' | 'one-on-one';
+  selectedAgentId?: string;
+}
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  agentName?: string;
+  agentId?: string;
+}
+
 function RunsPageContent() {
   const searchParams = useSearchParams();
   const initialRunId = searchParams.get('runId');
   const settings = useSettingsStore();
-  const stepsEndRef = useRef<HTMLDivElement>(null);
+  const { agents, fetchAgents } = useAgentsStore();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   const [runs, setRuns] = useState<CrewRunRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(initialRunId);
@@ -55,6 +76,17 @@ function RunsPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showStats, setShowStats] = useState(false);
+  const [crewAgents, setCrewAgents] = useState<any[]>([]);
+  
+  // Chat interface state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [chatMode, setChatMode] = useState<ChatMode>({ type: 'round-robin' });
+  const [showSettings, setShowSettings] = useState(false);
+  const [temperature, setTemperature] = useState(0.7);
+  const [topP, setTopP] = useState(0.9);
+  const [maxTokens, setMaxTokens] = useState(8192);
 
   const statusCounts = useMemo(() => {
     return runs.reduce(
@@ -150,6 +182,7 @@ function RunsPageContent() {
       const data = await response.json();
       setSelectedRun(data.run);
       setSteps(data.steps || []);
+      setRuns((prev) => prev.map((run) => (run.id === data.run.id ? data.run : run)));
     } catch {
       // ignore
     } finally {
@@ -178,28 +211,83 @@ function RunsPageContent() {
   }, []);
 
   useEffect(() => {
+    fetchAgents();
+  }, [fetchAgents]);
+
+  useEffect(() => {
     if (selectedRunId) {
       fetchRunDetails(selectedRunId);
     }
   }, [selectedRunId]);
 
   useEffect(() => {
+    const hasRunning = runs.some((run) => run.status === 'running');
+    if (!hasRunning && selectedRun?.status !== 'running') return;
+
     const interval = setInterval(() => {
       fetchRuns();
-      if (selectedRun?.status === 'running' && selectedRunId) {
+      if (selectedRunId) {
         fetchRunDetails(selectedRunId);
       }
-    }, 2500);
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [selectedRun?.status, selectedRunId]);
+  }, [runs, selectedRun, selectedRunId]);
 
-  // Auto-scroll to bottom when steps change
+  // Fetch crew agents and initialize messages when selectedRun changes
   useEffect(() => {
-    if (settings.autoScrollToLatest && selectedRun?.status === 'running') {
-      stepsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const fetchCrewAgents = async () => {
+      if (!selectedRun?.crewId) return;
+      try {
+        const crewResponse = await fetch(`/api/crews/${selectedRun.crewId}`);
+        if (crewResponse.ok) {
+          const crewData = await crewResponse.json();
+          const crewAgentIds = crewData.agents || [];
+          const filteredAgents = agents.filter((a) => crewAgentIds.includes(a.id));
+          setCrewAgents(filteredAgents);
+          
+          // Set default agent for one-on-one mode
+          if (filteredAgents.length > 0 && chatMode.type === 'one-on-one' && !chatMode.selectedAgentId) {
+            setChatMode({ type: 'one-on-one', selectedAgentId: filteredAgents[0].id });
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchCrewAgents();
+  }, [selectedRun, agents]);
+
+  // Initialize messages from steps
+  useEffect(() => {
+    if (steps.length > 0) {
+      const initialMessages: Message[] = [];
+      steps.forEach((step) => {
+        initialMessages.push({
+          id: `step-${step.id}-user`,
+          role: 'user',
+          content: step.input,
+          timestamp: new Date(step.createdAt),
+        });
+        initialMessages.push({
+          id: `step-${step.id}-assistant`,
+          role: 'assistant',
+          content: step.success ? step.output : `Error: ${step.error || 'Unknown error'}`,
+          timestamp: new Date(step.createdAt),
+          agentName: step.agentName,
+          agentId: step.agentId,
+        });
+      });
+      setMessages(initialMessages);
+    } else {
+      setMessages([]);
     }
-  }, [steps, selectedRun?.status, settings.autoScrollToLatest]);
+  }, [steps]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isGenerating]);
 
   const formatDuration = (start?: string, end?: string) => {
     if (!start) return '-';
@@ -208,6 +296,162 @@ function RunsPageContent() {
     const duration = Math.max(0, endTime - startTime);
     if (duration < 1000) return `${duration}ms`;
     return `${(duration / 1000).toFixed(2)}s`;
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isGenerating || crewAgents.length === 0 || !selectedRun) return;
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: input.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsGenerating(true);
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    try {
+      if (chatMode.type === 'round-robin') {
+        // Round robin: all agents respond in sequence
+        const baseRequest = input.trim();
+        const roundOutputs: string[] = [];
+        let rollingHistory: Message[] = [...messages, userMessage];
+        for (let i = 0; i < crewAgents.length; i++) {
+          const agent = crewAgents[i];
+          const isFinalAgent = i === crewAgents.length - 1;
+          const priorOutputs = roundOutputs.length
+            ? roundOutputs.map((output, index) => `Agent ${index + 1} Output:\n${output}`).join('\n\n')
+            : 'None yet.';
+          
+          // Build context from recent messages
+          const conversationHistory = rollingHistory
+            .slice(-12)
+            .map((m) => ({
+              role: m.role,
+              content: m.content,
+            }));
+
+          const stageInstruction = isFinalAgent
+            ? 'You are the final synthesizer. Provide the complete, user-ready answer. Do not mention other agents or your process. Format in Markdown with a single H1 title, clear H2/H3 section headings, and proper paragraphs.'
+            : 'Provide your contribution to the final answer. Avoid repetition and focus on unique value. Use concise Markdown notes with headings or bullets.';
+
+          const message = `User request:\n${baseRequest}\n\nPrior agent outputs:\n${priorOutputs}`;
+
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message,
+              model: selectedRun.model,
+              systemPrompt: `${agent.systemPrompt}\n\nYou are agent ${i + 1} of ${crewAgents.length} in a crew. ${stageInstruction}`,
+              temperature,
+              topP,
+              maxTokens,
+              stream: false,
+              conversationHistory,
+            }),
+            signal: abortController.signal,
+          });
+
+          if (!response.ok) throw new Error(`Agent ${agent.name} failed to respond`);
+
+          const data = await response.json();
+
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}-${i}`,
+            role: 'assistant',
+            content: data.response || 'No response received.',
+            timestamp: new Date(),
+            agentName: agent.name,
+            agentId: agent.id,
+          };
+
+          setMessages((prev) => [...prev, assistantMessage]);
+          roundOutputs.push(assistantMessage.content);
+          rollingHistory = [...rollingHistory, assistantMessage];
+          
+          // Small delay between agents for readability
+          if (i < crewAgents.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      } else {
+        // One-on-one: single agent responds with full history
+        const agent = crewAgents.find((a) => a.id === chatMode.selectedAgentId);
+        if (!agent) throw new Error('Selected agent not found');
+
+        const conversationHistory = messages
+          .slice(-12)
+          .map((m) => ({
+            role: m.role,
+            content: m.content,
+          }));
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: input.trim(),
+            model: selectedRun.model,
+            systemPrompt: `${agent.systemPrompt}\n\nYou are having a one-on-one conversation. Provide detailed, comprehensive responses.`,
+            temperature,
+            topP,
+            maxTokens,
+            stream: false,
+            conversationHistory,
+          }),
+          signal: abortController.signal,
+        });
+
+        if (!response.ok) throw new Error('Failed to generate response');
+
+        const data = await response.json();
+
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: data.response || 'No response received.',
+          timestamp: new Date(),
+          agentName: agent.name,
+          agentId: agent.id,
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') return;
+      
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: `Error: ${error.message || 'Failed to generate response'}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsGenerating(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsGenerating(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const statusBadge = (status: CrewRunRecord['status']) => {
@@ -224,266 +468,326 @@ function RunsPageContent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      <div className="border-b border-border/60 bg-background/80 backdrop-blur p-4 pt-12">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Crew Runs</h1>
-            <p className="text-sm text-muted-foreground">Monitor executions and review outputs</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setShowStats(!showStats)}>
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Stats
-            </Button>
-            {selectedRun && (
-              <Button variant="ghost" size="sm" onClick={handleExportRun}>
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-            )}
-            <Button variant="secondary" onClick={fetchRuns} disabled={loading}>
-              {loading ? <Loader className="w-4 h-4 animate-spin" /> : 'Refresh'}
-            </Button>
+    <div className="flex-1 flex h-full overflow-hidden">
+      {/* Sidebar with runs list */}
+      <div className="w-80 border-r border-border/60 flex flex-col bg-secondary/40 backdrop-blur-sm">
+        {/* Header */}
+        <div className="border-b border-border/60 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold tracking-tight">Crew Runs</h2>
             <Link href="/crews">
-              <Button>Back to Crews</Button>
+              <Button variant="ghost" size="sm">Back</Button>
             </Link>
           </div>
-        </div>
-        
-        {showStats && (
-          <div className="grid grid-cols-3 gap-3 mt-4 p-4 rounded-lg border border-border bg-background/60">
-            <div>
-              <p className="text-xs text-muted-foreground">Success Rate</p>
-              <p className="text-xl font-semibold">{stats.successRate}%</p>
+          
+          {/* Search and Filter */}
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search runs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Avg Duration</p>
-              <p className="text-xl font-semibold">{stats.avgDuration}s</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Steps</p>
-              <p className="text-xl font-semibold">{stats.totalSteps}</p>
-            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Filter runs by status"
+            >
+              <option value="all">All Status</option>
+              <option value="running">Running</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
           </div>
-        )}
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-          <Card>
-            <CardContent className="py-3">
-              <p className="text-xs text-muted-foreground">Total Runs</p>
-              <p className="text-lg font-semibold">{statusCounts.total}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-3">
-              <p className="text-xs text-muted-foreground">Running</p>
-              <p className="text-lg font-semibold text-blue-500">{statusCounts.running}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-3">
-              <p className="text-xs text-muted-foreground">Completed</p>
-              <p className="text-lg font-semibold text-green-500">{statusCounts.completed}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-3">
-              <p className="text-xs text-muted-foreground">Failed</p>
-              <p className="text-lg font-semibold text-red-500">{statusCounts.failed}</p>
-            </CardContent>
-          </Card>
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-2 p-4 border-b border-border/60">
+          <div className="text-center p-2 rounded-lg bg-background/60">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-lg font-semibold">{statusCounts.total}</p>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-background/60">
+            <p className="text-xs text-muted-foreground">Running</p>
+            <p className="text-lg font-semibold text-blue-500">{statusCounts.running}</p>
+          </div>
+        </div>
+
+        {/* Runs List */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {loading && runs.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredRuns.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {searchQuery || statusFilter !== 'all' ? 'No matching runs found.' : 'No runs yet.'}
+            </p>
+          ) : (
+            filteredRuns.map((run) => (
+              <button
+                key={run.id}
+                onClick={() => setSelectedRunId(run.id)}
+                className={`w-full text-left border border-border/60 rounded-lg p-3 space-y-2 transition-all duration-200 ${
+                  selectedRunId === run.id
+                    ? 'bg-primary/10 border-primary/30 shadow-sm'
+                    : 'bg-background/60 hover:bg-secondary/60 hover:shadow-sm'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium truncate flex-1">{run.crewName}</p>
+                  {statusBadge(run.status)}
+                </div>
+                <p className="text-xs text-muted-foreground">{new Date(run.startedAt).toLocaleString()}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {run.status === 'completed' ? (
+                    <CheckCircle className="w-3 h-3 text-green-500" />
+                  ) : run.status === 'failed' ? (
+                    <XCircle className="w-3 h-3 text-red-500" />
+                  ) : (
+                    <Loader className="w-3 h-3 text-blue-500 animate-spin" />
+                  )}
+                  <span>{formatDuration(run.startedAt, run.completedAt)}</span>
+                </div>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 p-4 overflow-hidden">
-        <Card className="overflow-hidden flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Recent Runs</CardTitle>
-            <CardDescription className="text-xs">Latest activity across crews</CardDescription>
-            
-            {/* Search and Filter */}
-            <div className="space-y-2 pt-3">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search runs..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label="Filter runs by status"
-              >
-                <option value="all">All Status</option>
-                <option value="running">Running</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-              </select>
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {!selectedRun ? (
+          <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+            <div>
+              <p className="text-lg font-medium mb-2">No run selected</p>
+              <p className="text-sm">Select a run from the sidebar to continue</p>
             </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto space-y-2">
-            {loading && runs.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredRuns.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {searchQuery || statusFilter !== 'all' ? 'No matching runs found.' : 'No runs yet.'}
-              </p>
-            ) : (
-              filteredRuns.map((run) => (
-                <button
-                  key={run.id}
-                  onClick={() => setSelectedRunId(run.id)}
-                  className={`w-full text-left border border-border/60 rounded-lg p-3 space-y-2 transition-colors ${
-                    selectedRunId === run.id
-                      ? 'bg-accent/40 border-primary/40'
-                      : 'bg-background/60 hover:bg-accent/30'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium truncate">{run.crewName}</p>
-                    {statusBadge(run.status)}
+          </div>
+        ) : (
+          <>
+            {/* Chat Header */}
+            <div className="border-b border-border/60 bg-background/80 backdrop-blur p-4">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold mb-1">{selectedRun.crewName}</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {statusBadge(selectedRun.status)}
+                    <Badge variant="default" className="text-xs">{selectedRun.model}</Badge>
+                    <Badge variant="default" className="text-xs">{crewAgents.length} agents</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{new Date(run.startedAt).toLocaleString()}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {run.status === 'running' ? (
-                      <Play className="w-3 h-3 text-blue-500" />
-                    ) : run.status === 'completed' ? (
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                    ) : (
-                      <XCircle className="w-3 h-3 text-red-500" />
-                    )}
-                    <span>{formatDuration(run.startedAt, run.completedAt)}</span>
-                  </div>
-                </button>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Run Details</CardTitle>
-            <CardDescription className="text-xs">
-              {selectedRun ? `Run ${selectedRun.id}` : 'Select a run to view output'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto space-y-4">
-            {!selectedRun && !detailsLoading && (
-              <p className="text-sm text-muted-foreground">No run selected.</p>
-            )}
-            {detailsLoading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader className="w-4 h-4 animate-spin" /> Loading run details...
-              </div>
-            )}
-            {selectedRun && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  {statusBadge(selectedRun.status)}
-                  <Badge className="bg-muted/60">{selectedRun.workflowType}</Badge>
-                  <Badge className="bg-muted/60">{selectedRun.model}</Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Crew</p>
-                    <p className="font-medium">{selectedRun.crewName}</p>
-                  </div>
+                <div className="flex gap-2">
                   <Button
-                    variant="secondary"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSettings(!showSettings)}
+                    title="Toggle settings"
+                  >
+                    <Settings2 className={`w-4 h-4 ${showSettings ? 'text-primary' : ''}`} />
+                  </Button>
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteRun(selectedRun.id)}
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Delete Run
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Duration</p>
-                    <p className="font-medium">{formatDuration(selectedRun.startedAt, selectedRun.completedAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Started</p>
-                    <p className="font-medium">{new Date(selectedRun.startedAt).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Completed</p>
-                    <p className="font-medium">{selectedRun.completedAt ? new Date(selectedRun.completedAt).toLocaleString() : '—'}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Input</p>
-                  <div className="bg-background rounded p-2 text-xs font-mono max-h-24 overflow-y-auto">
-                    {selectedRun.input}
-                  </div>
-                </div>
-                {selectedRun.error && (
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm text-destructive">
-                    {selectedRun.error}
-                  </div>
-                )}
               </div>
-            )}
 
-            {selectedRun && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Conversation Output</p>
-                  {selectedRun.status === 'running' && (
-                    <span className="text-xs text-blue-500">Live updating…</span>
+              {/* Settings Panel */}
+              {showSettings && (
+                <div className="border-t border-border/60 pt-4 mt-2">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-xs mb-2 block">Temperature: {temperature}</Label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={temperature}
+                        onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                        className="w-full"
+                        aria-label={`Temperature: ${temperature}`}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs mb-2 block">Top P: {topP}</Label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={topP}
+                        onChange={(e) => setTopP(parseFloat(e.target.value))}
+                        className="w-full"
+                        aria-label={`Top P: ${topP}`}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs mb-2 block">Max Tokens: {maxTokens}</Label>
+                      <input
+                        type="range"
+                        min="1024"
+                        max="32768"
+                        step="1024"
+                        value={maxTokens}
+                        onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                        className="w-full"
+                        aria-label={`Max Tokens: ${maxTokens}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Mode Selector */}
+              <div className="border-t border-border/60 pt-4 mt-4">
+                <div className="flex items-center gap-4">
+                  <Label className="text-sm font-semibold">Chat Mode:</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={chatMode.type === 'round-robin' ? 'primary' : 'ghost'}
+                      onClick={() => setChatMode({ type: 'round-robin' })}
+                      disabled={crewAgents.length === 0}
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Round Robin
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={chatMode.type === 'one-on-one' ? 'primary' : 'ghost'}
+                      onClick={() => setChatMode({ type: 'one-on-one', selectedAgentId: crewAgents[0]?.id })}
+                      disabled={crewAgents.length === 0}
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      One-on-One
+                    </Button>
+                  </div>
+                  
+                  {chatMode.type === 'one-on-one' && crewAgents.length > 0 && (
+                    <Select
+                      value={chatMode.selectedAgentId || crewAgents[0]?.id}
+                      onChange={(e) => setChatMode({ type: 'one-on-one', selectedAgentId: e.target.value })}
+                      className="flex-1 max-w-xs"
+                    >
+                      {crewAgents.map((agent) => (
+                        <option key={agent.id} value={agent.id}>
+                          {agent.name} ({agent.role})
+                        </option>
+                      ))}
+                    </Select>
                   )}
                 </div>
-                {steps.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No steps recorded yet.</p>
-                ) : (
-                  <div className="space-y-6">
-                    {steps.map((step) => (
-                      <div key={step.id} className="space-y-3">
-                        <div className="flex items-center gap-3 pb-2 border-b border-border/40">
-                          <Badge className="bg-primary/10 text-primary border-primary/20 font-mono text-xs">
-                            Step {step.stepIndex + 1}
-                          </Badge>
-                          <Badge className="bg-muted/60 font-medium">
-                            {step.agentName}
-                          </Badge>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-                            {step.success ? (
-                              <CheckCircle className="w-3 h-3 text-green-500" />
-                            ) : (
-                              <XCircle className="w-3 h-3 text-destructive" />
-                            )}
-                            <span>{step.duration}ms</span>
-                          </div>
-                        </div>
-                        <div className="space-y-3 pl-2">
-                          <ChatMessage
-                            role="user"
-                            content={step.input}
-                            timestamp={new Date(step.createdAt)}
-                          />
-                          <ChatMessage
-                            role="assistant"
-                            content={step.success ? step.output : `Error: ${step.error || 'Unknown error'}`}
-                            timestamp={new Date(step.createdAt)}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={stepsEndRef} />
-                  </div>
-                )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  {chatMode.type === 'round-robin'
+                    ? 'All agents respond in sequence to each message'
+                    : 'Have a focused conversation with a single agent'}
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/10">
+              {detailsLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <div>
+                    <p className="text-sm font-medium mb-2">No messages yet</p>
+                    <p className="text-xs">Start a conversation with the crew below</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {messages.map((message) => (
+                    <div key={message.id}>
+                      {message.agentName && message.role === 'assistant' && (
+                        <div className="mb-2 pl-1">
+                          <Badge variant="default" className="text-xs font-medium">
+                            {message.agentName}
+                          </Badge>
+                        </div>
+                      )}
+                      <ChatMessage
+                        role={message.role}
+                        content={message.content}
+                        timestamp={message.timestamp}
+                        messageId={message.id}
+                      />
+                    </div>
+                  ))}
+                  {isGenerating && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground pl-4">
+                      <Loader className="w-4 h-4 animate-spin" />
+                      <span>
+                        {chatMode.type === 'round-robin'
+                          ? 'Agents are responding...'
+                          : 'Agent is thinking...'}
+                      </span>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div className="border-t border-border/60 p-4 bg-background/80 backdrop-blur">
+              <div className="flex gap-3">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    chatMode.type === 'round-robin'
+                      ? 'Message all agents in the crew...'
+                      : 'Chat with the selected agent...'
+                  }
+                  rows={3}
+                  className="flex-1 resize-none"
+                  disabled={isGenerating || crewAgents.length === 0}
+                />
+                <div className="flex flex-col gap-2">
+                  {isGenerating ? (
+                    <Button
+                      onClick={handleStop}
+                      variant="destructive"
+                      size="sm"
+                      className="h-full px-4"
+                    >
+                      <StopCircle className="w-4 h-4 mr-2" />
+                      Stop
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleSend}
+                      disabled={!input.trim() || crewAgents.length === 0}
+                      size="sm"
+                      className="h-full px-4 font-semibold"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Send
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Press Enter to send • Shift+Enter for new line • Up to {maxTokens.toLocaleString()} tokens per response
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

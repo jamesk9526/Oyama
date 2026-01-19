@@ -5,17 +5,16 @@ import { usePathname, useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { 
   MessageSquare, 
-  Users, 
   FileText, 
   Settings, 
-  Folder,
-  Activity,
   Plus,
   X,
   Menu,
   History,
   Search,
-  Trash2
+  Trash2,
+  Code2,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useUIStore } from '@/lib/stores/ui';
@@ -23,10 +22,9 @@ import { useEffect, useState } from 'react';
 
 const navigation = [
   { name: 'Chats', href: '/chats', icon: MessageSquare },
-  { name: 'Agents', href: '/agents', icon: Users },
+  { name: 'Agent Playground', href: '/playground', icon: Sparkles },
+  { name: 'Tooling', href: '/tooling', icon: Code2 },
   { name: 'Templates', href: '/templates', icon: FileText },
-  { name: 'Crews', href: '/crews', icon: Folder },
-  { name: 'Runs', href: '/crews/runs', icon: Activity },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
