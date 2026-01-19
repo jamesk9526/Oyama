@@ -215,8 +215,8 @@ const createMigrationTable = () => {
 
 export const getCurrentVersion = (): number => {
   createMigrationTable();
-  const result = db.prepare('SELECT MAX(version) as version FROM migrations').get() as { version: number | null };
-  return result.version || 0;
+  const result = db.prepare('SELECT MAX(version) as version FROM migrations').get() as { version: number | null } | undefined;
+  return result?.version || 0;
 };
 
 export const runMigrations = () => {

@@ -56,13 +56,13 @@ export class TemplateEngine {
       
       // Handle default values: {{variable|default}}
       if (trimmedKey.includes('|')) {
-        const [varName, defaultValue] = trimmedKey.split('|').map(s => s.trim());
+        const [varName, defaultValue] = trimmedKey.split('|').map((s: string) => s.trim());
         return String(variables[varName] ?? defaultValue);
       }
 
       // Handle transforms: {{variable:uppercase}}
       if (trimmedKey.includes(':')) {
-        const [varName, transform] = trimmedKey.split(':').map(s => s.trim());
+        const [varName, transform] = trimmedKey.split(':').map((s: string) => s.trim());
         const value = variables[varName];
         return this.applyTransform(value, transform);
       }

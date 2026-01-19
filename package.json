@@ -2,41 +2,100 @@
   "name": "oyama",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
+  "homepage": "./",
   "scripts": {
     "dev": "next dev",
+    "dev:electron": "npm run generate:icon && concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
     "build": "next build",
+    "build:desktop": "npm run generate:icon && npm run build && electron-builder",
+    "build:desktop:win": "npm run generate:icon && npm run build && electron-builder --win",
+    "generate:icon": "node scripts/generate-icon.js",
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js"
   },
   "dependencies": {
-    "next": "14.1.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "better-sqlite3": "^9.2.2",
-    "zod": "^3.22.4",
-    "zustand": "^4.5.0",
-    "clsx": "^2.1.0",
-    "cmdk": "^0.2.0",
-    "date-fns": "^3.3.1",
-    "lucide-react": "^0.316.0",
-    "react-markdown": "^9.0.1",
-    "react-syntax-highlighter": "^15.5.0",
-    "uuid": "^9.0.1"
+    "better-sqlite3": "^12.6.2",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.4",
+    "date-fns": "^4.1.0",
+    "highlight.js": "^11.11.1",
+    "lucide-react": "^0.468.0",
+    "next": "14.2.20",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.1",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.8",
-    "@types/node": "^20",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@types/react-syntax-highlighter": "^15.5.11",
-    "@types/uuid": "^9.0.7",
-    "autoprefixer": "^10.0.1",
+    "@types/uuid": "^10",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
+    "electron": "^40.0.0",
+    "electron-builder": "^26.4.0",
+    "electron-is-dev": "^3.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.1.0",
-    "postcss": "^8",
-    "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "eslint-config-next": "14.2.20",
+    "postcss": "^8.4.49",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.oyama.app",
+    "productName": "Oyama",
+    "files": [
+      "out/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "certificateFile": null,
+      "certificatePassword": null,
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Oyama"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    }
   }
 }

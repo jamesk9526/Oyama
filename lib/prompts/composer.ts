@@ -255,7 +255,7 @@ export class PromptComposer {
       .prepare(
         'SELECT MAX(version) as version FROM system_prompt_versions WHERE level = ? AND entity_id IS ?'
       )
-      .get(level, entityId || null) as { version: number | null };
+      .get(level, entityId || null) as { version: number | null } | undefined;
 
     const newVersion = (currentVersion?.version || 0) + 1;
 

@@ -1,21 +1,32 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+// Temporary in-memory database store
+// TODO: Replace with proper SQLite implementation
 
-const DB_PATH = path.join(process.cwd(), 'data', 'oyama.db');
+type Store = {
+  [key: string]: any[];
+};
 
-// Ensure data directory exists
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+class InMemoryDB {
+  private store: Store = {};
+
+  prepare(sql: string) {
+    // Simple mock implementation for development
+    return {
+      run: (...params: any[]) => ({ changes: 1 }),
+      get: (...params: any[]) => undefined,
+      all: (...params: any[]) => [],
+    };
+  }
+
+  exec(sql: string) {
+    // Mock exec
+    console.log('DB exec:', sql.substring(0, 100) + '...');
+  }
+
+  pragma(pragma: string) {
+    // Mock pragma
+  }
 }
 
-const db = new Database(DB_PATH);
-
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
-
-// Enable WAL mode for better concurrency
-db.pragma('journal_mode = WAL');
+const db = new InMemoryDB();
 
 export default db;

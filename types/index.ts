@@ -45,7 +45,7 @@ export interface Template {
   systemAdditions?: string;
   examples?: string[];
   outputSchema?: string; // JSON schema
-  workspaceId?: string; // null = global
+  workspaceId?: string | null; // null = global
   isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
@@ -238,6 +238,7 @@ export interface LLMRequest {
     content: string;
   }>;
   temperature?: number;
+  topP?: number;
   maxTokens?: number;
   stream?: boolean;
 }
