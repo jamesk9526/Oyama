@@ -811,7 +811,7 @@ export default function AgentPlaygroundPage() {
                 <Button
                   className="h-auto px-4"
                   onClick={runCrew}
-                  disabled={status === 'running' || !input.trim() || activeAgentIds.length === 0 || (runMode === 'crew' && !selectedCrew)}
+                  disabled={!input.trim() || activeAgentIds.length === 0 || (runMode === 'crew' && !selectedCrew)}
                 >
                   <Send className="w-4 h-4 mr-2" />
                   Run

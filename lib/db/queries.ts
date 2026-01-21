@@ -303,10 +303,10 @@ export const crewQueries = {
     }
 
     return rows.map((row) => {
-      const agents = db
+      const agentRows = db
         .prepare('SELECT agent_id FROM crew_agents WHERE crew_id = ? ORDER BY order_index ASC')
-        .all(row.id)
-        .map((agentRow: { agent_id: string }) => agentRow.agent_id);
+        .all(row.id) as { agent_id: string }[];
+      const agents = agentRows.map((agentRow) => agentRow.agent_id);
       return normalizeCrew(row, agents);
     }) as CrewRecord[];
   },
@@ -319,10 +319,10 @@ export const crewQueries = {
     const useCrewAgentsTable = hasTable('crew_agents') && !hasColumn('crews', 'agents') && !hasColumn('crews', 'agentIds');
     if (!useCrewAgentsTable) return normalizeCrew(row) as CrewRecord;
 
-    const agents = db
+    const agentRows = db
       .prepare('SELECT agent_id FROM crew_agents WHERE crew_id = ? ORDER BY order_index ASC')
-      .all(id)
-      .map((agentRow: { agent_id: string }) => agentRow.agent_id);
+      .all(id) as { agent_id: string }[];
+    const agents = agentRows.map((agentRow) => agentRow.agent_id);
     return normalizeCrew(row, agents) as CrewRecord;
   },
 

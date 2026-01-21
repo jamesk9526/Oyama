@@ -96,6 +96,11 @@ const rolePresets: Record<AgentRole, { icon: string; prompt: string; description
     prompt: 'You are a product lead. Define outcomes, prioritize work, and align stakeholders on a clear roadmap.',
     description: 'Leads product direction',
   },
+  synthesizer: {
+    icon: '🔗',
+    prompt: 'You are a synthesizer. Combine multiple sources of information into cohesive insights. Connect dots across domains and create unified perspectives.',
+    description: 'Synthesizes information from multiple sources',
+  },
   custom: {
     icon: '⚙️',
     prompt: '',

@@ -24,6 +24,7 @@ const roleColors: Record<AgentRole, string> = {
   coder: 'bg-emerald-500/10 text-emerald-300/90 border-emerald-500/20',
   qa: 'bg-amber-500/10 text-amber-300/90 border-amber-500/20',
   summarizer: 'bg-cyan-500/10 text-cyan-300/90 border-cyan-500/20',
+  synthesizer: 'bg-teal-500/10 text-teal-300/90 border-teal-500/20',
   custom: 'bg-slate-500/10 text-slate-300/90 border-slate-500/20',
   debugger: 'bg-red-500/10 text-red-300/90 border-red-500/20',
   analyst: 'bg-blue-500/10 text-blue-300/90 border-blue-500/20',
