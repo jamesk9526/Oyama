@@ -685,7 +685,7 @@ interface ComparisonMetrics {
 class ResponseComparator {
   async compare(responses: Response[]): Promise<ComparisonResult>;
   async rank(responses: Response[]): Promise<Response[]>;
-  async highlight Differences(responseA: Response, responseB: Response): Promise<Diff>;
+  async highlightDifferences(responseA: Response, responseB: Response): Promise<Diff>;
 }
 ```
 
