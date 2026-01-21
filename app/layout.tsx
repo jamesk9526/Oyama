@@ -3,6 +3,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { WindowControls } from "@/components/layout/WindowControls";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
   title: "Oyama - AI Agent Collaboration Platform",
@@ -17,21 +18,23 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body>
-        {/* Title bar for Electron (draggable area) */}
-        <div className="h-8 bg-background border-b border-border flex items-center justify-between px-4 select-none"
-             style={{ WebkitAppRegion: 'drag' } as any}>
-          <span className="text-xs text-muted-foreground">Oyama</span>
-          <WindowControls />
-        </div>
+        <ToastProvider>
+          {/* Title bar for Electron (draggable area) */}
+          <div className="h-8 bg-background border-b border-border flex items-center justify-between px-4 select-none"
+               style={{ WebkitAppRegion: 'drag' } as any}>
+            <span className="text-xs text-muted-foreground">Oyama</span>
+            <WindowControls />
+          </div>
 
-        <div className="flex h-[calc(100vh-2rem)] overflow-hidden relative">
-          <Sidebar />
-          <main className="flex-1 overflow-hidden w-full">
-            <ClientLayout>
-              {children}
-            </ClientLayout>
-          </main>
-        </div>
+          <div className="flex h-[calc(100vh-2rem)] overflow-hidden relative">
+            <Sidebar />
+            <main className="flex-1 overflow-hidden w-full">
+              <ClientLayout>
+                {children}
+              </ClientLayout>
+            </main>
+          </div>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -8,11 +8,42 @@ import type {
   WorkflowStepCallback,
 } from './types';
 
+/**
+ * WorkflowExecutor - Core engine for executing multi-agent workflows
+ * 
+ * Supports multiple workflow types:
+ * - Sequential: Agents process in order, passing output to next
+ * - Parallel: All agents process simultaneously with same input
+ * - Conditional: Agents execute based on conditions
+ * - Round-Robin: Sequential processing with multiple iterations
+ * 
+ * @example
+ * ```typescript
+ * const executor = new WorkflowExecutor(agents, {
+ *   model: 'llama2',
+ *   temperature: 0.7,
+ *   timeout: 30000
+ * });
+ * 
+ * const result = await executor.execute(
+ *   'crew-123',
+ *   'Research Team',
+ *   { type: 'sequential', agents: ['agent-1', 'agent-2'] },
+ *   'Analyze market trends'
+ * );
+ * ```
+ */
 export class WorkflowExecutor {
   private options: ExecutorOptions;
   private agents: Agent[];
   private context: WorkflowContext;
 
+  /**
+   * Creates a new WorkflowExecutor instance
+   * 
+   * @param agents - Array of agent objects to use in workflows
+   * @param options - Execution configuration (model, temperature, timeout, etc.)
+   */
   constructor(agents: Agent[], options: ExecutorOptions) {
     this.agents = agents;
     this.options = options;
@@ -24,6 +55,14 @@ export class WorkflowExecutor {
 
   /**
    * Execute a workflow with the given definition
+   * 
+   * @param crewId - Unique identifier for the crew
+   * @param crewName - Human-readable name of the crew
+   * @param workflow - Workflow definition including type and configuration
+   * @param initialInput - Starting input/prompt for the workflow
+   * @returns Promise resolving to execution result with steps and output
+   * 
+   * @throws {Error} If workflow execution fails or times out
    */
   async execute(
     crewId: string,
@@ -34,6 +73,18 @@ export class WorkflowExecutor {
     return this.executeWithCallbacks(crewId, crewName, workflow, initialInput);
   }
 
+  /**
+   * Execute a workflow with step callbacks for real-time updates
+   * 
+   * @param crewId - Unique identifier for the crew
+   * @param crewName - Human-readable name of the crew
+   * @param workflow - Workflow definition
+   * @param initialInput - Starting input/prompt
+   * @param onStep - Optional callback invoked after each step completes
+   * @returns Promise resolving to execution result
+   * 
+   * @internal
+   */
   async executeWithCallbacks(
     crewId: string,
     crewName: string,
