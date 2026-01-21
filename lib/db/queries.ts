@@ -138,7 +138,7 @@ export interface CrewRecord {
 export const agentQueries = {
   getAll: () => {
     const db = getDatabase();
-    const rows = db.prepare('SELECT * FROM agents ORDER BY updated_at DESC').all() as any[];
+    const rows = db.prepare('SELECT * FROM agents ORDER BY updatedAt DESC').all() as any[];
     return rows.map(normalizeAgent) as Agent[];
   },
 
@@ -151,7 +151,7 @@ export const agentQueries = {
   create: (agent: Agent) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO agents (id, name, role, system_prompt, style_rules, model, provider, capabilities, color_tag, icon, workspace_id, version, created_at, updated_at)
+      INSERT INTO agents (id, name, role, systemPrompt, styleRules, model, provider, capabilities, colorTag, icon, workspaceId, version, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
@@ -181,7 +181,7 @@ export const agentQueries = {
     const updated = { ...agent, ...updates, updatedAt: new Date().toISOString() };
     const stmt = db.prepare(`
       UPDATE agents 
-      SET name = ?, role = ?, system_prompt = ?, style_rules = ?, model = ?, provider = ?, capabilities = ?, color_tag = ?, icon = ?, workspace_id = ?, version = ?, updated_at = ?
+      SET name = ?, role = ?, systemPrompt = ?, styleRules = ?, model = ?, provider = ?, capabilities = ?, colorTag = ?, icon = ?, workspaceId = ?, version = ?, updatedAt = ?
       WHERE id = ?
     `);
     stmt.run(
@@ -213,7 +213,7 @@ export const agentQueries = {
 export const templateQueries = {
   getAll: () => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM templates ORDER BY updated_at DESC').all() as any[];
+    return db.prepare('SELECT * FROM templates ORDER BY updatedAt DESC').all() as any[];
   },
 
   getById: (id: string) => {
