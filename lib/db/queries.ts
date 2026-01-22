@@ -753,7 +753,7 @@ export const attachmentQueries = {
   getByScope: (scopeType: Attachment['scopeType'], scopeId: string) => {
     const db = getDatabase();
     return db
-      .prepare('SELECT * FROM attachments WHERE scopeType = ? AND scopeId = ? ORDER BY createdAt DESC')
+      .prepare('SELECT * FROM attachments WHERE scope_type = ? AND scope_id = ? ORDER BY created_at DESC')
       .all(scopeType, scopeId) as Attachment[];
   },
 
@@ -769,7 +769,7 @@ export const attachmentQueries = {
   create: (attachment: Attachment) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO attachments (id, scopeType, scopeId, name, path, mime, size, createdAt)
+      INSERT INTO attachments (id, scope_type, scope_id, name, path, mime, size, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
@@ -797,7 +797,7 @@ export const crewRunQueries = {
   createRun: (run: CrewRunRecord) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO crew_runs (id, crewId, crewName, workflowType, input, status, model, provider, temperature, topP, maxTokens, startedAt, completedAt, error)
+      INSERT INTO crew_runs (id, crew_id, crew_name, workflow_type, input, status, model, provider, temperature, top_p, max_tokens, started_at, completed_at, error)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
@@ -826,7 +826,7 @@ export const crewRunQueries = {
     const updated = { ...existing, ...updates } as CrewRunRecord;
     const stmt = db.prepare(`
       UPDATE crew_runs
-      SET status = ?, completedAt = ?, error = ?
+      SET status = ?, completed_at = ?, error = ?
       WHERE id = ?
     `);
     stmt.run(updated.status, updated.completedAt ?? null, updated.error ?? null, id);
@@ -836,7 +836,7 @@ export const crewRunQueries = {
   listRuns: (limit = 50) => {
     const db = getDatabase();
     return db
-      .prepare('SELECT * FROM crew_runs ORDER BY startedAt DESC LIMIT ?')
+      .prepare('SELECT * FROM crew_runs ORDER BY started_at DESC LIMIT ?')
       .all(limit) as CrewRunRecord[];
   },
 
@@ -856,7 +856,7 @@ export const crewRunStepQueries = {
   addStep: (step: CrewRunStepRecord) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO crew_run_steps (id, runId, stepIndex, agentId, agentName, input, output, success, error, duration, createdAt)
+      INSERT INTO crew_run_steps (id, run_id, step_index, agent_id, agent_name, input, output, success, error, duration, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
@@ -904,7 +904,7 @@ export const memoryQueries = {
   create: (memory: Omit<MemoryRecord, 'accessCount' | 'lastAccessedAt'>) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO memories (id, chatId, content, type, importance, keywords, createdAt, accessCount)
+      INSERT INTO memories (id, chat_id, content, type, importance, keywords, created_at, access_count)
       VALUES (?, ?, ?, ?, ?, ?, ?, 0)
     `);
     stmt.run(
@@ -927,7 +927,7 @@ export const memoryQueries = {
       .prepare(`
         SELECT * FROM memories 
         WHERE LOWER(content) LIKE ? OR LOWER(keywords) LIKE ?
-        ORDER BY importance DESC, accessCount DESC, createdAt DESC
+        ORDER BY importance DESC, access_count DESC, created_at DESC
         LIMIT ?
       `)
       .all(`%${keywords[0].toLowerCase()}%`, `%${keywords[0].toLowerCase()}%`, limit) as any[];
@@ -941,7 +941,7 @@ export const memoryQueries = {
   getRecent: (limit: number = 20) => {
     const db = getDatabase();
     const rows = db
-      .prepare('SELECT * FROM memories ORDER BY createdAt DESC LIMIT ?')
+      .prepare('SELECT * FROM memories ORDER BY created_at DESC LIMIT ?')
       .all(limit) as any[];
     
     return rows.map(row => ({
@@ -954,7 +954,7 @@ export const memoryQueries = {
     const db = getDatabase();
     const stmt = db.prepare(`
       UPDATE memories 
-      SET lastAccessedAt = ?, accessCount = accessCount + 1
+      SET last_accessed_at = ?, access_count = access_count + 1
       WHERE id = ?
     `);
     stmt.run(new Date().toISOString(), id);
@@ -962,7 +962,7 @@ export const memoryQueries = {
 
   getAll: () => {
     const db = getDatabase();
-    const rows = db.prepare('SELECT * FROM memories ORDER BY importance DESC, createdAt DESC').all() as any[];
+    const rows = db.prepare('SELECT * FROM memories ORDER BY importance DESC, created_at DESC').all() as any[];
     return rows.map(row => ({
       ...row,
       keywords: JSON.parse(row.keywords || '[]'),

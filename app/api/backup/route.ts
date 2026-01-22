@@ -101,12 +101,12 @@ export async function POST(request: NextRequest) {
       // Chats
       if (data.chats && Array.isArray(data.chats)) {
         const stmt = db.prepare(`
-          INSERT OR REPLACE INTO chats (id, title, agentId, model, createdAt, updatedAt)
+          INSERT OR REPLACE INTO chats (id, title, agent_id, model, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?)
         `);
         for (const chat of data.chats) {
           try {
-            stmt.run(chat.id, chat.title, chat.agentId, chat.model, chat.createdAt, chat.updatedAt);
+            stmt.run(chat.id, chat.title, chat.agentId || chat.agent_id, chat.model, chat.createdAt || chat.created_at, chat.updatedAt || chat.updated_at);
           } catch (e) {
             // Skip if chat already exists or data mismatch
           }
@@ -116,12 +116,12 @@ export async function POST(request: NextRequest) {
       // Messages
       if (data.messages && Array.isArray(data.messages)) {
         const stmt = db.prepare(`
-          INSERT OR REPLACE INTO messages (id, chatId, role, content, timestamp)
+          INSERT OR REPLACE INTO messages (id, chat_id, role, content, timestamp)
           VALUES (?, ?, ?, ?, ?)
         `);
         for (const msg of data.messages) {
           try {
-            stmt.run(msg.id, msg.chatId, msg.role, msg.content, msg.timestamp);
+            stmt.run(msg.id, msg.chatId || msg.chat_id, msg.role, msg.content, msg.timestamp);
           } catch (e) {
             // Skip errors
           }
@@ -131,21 +131,21 @@ export async function POST(request: NextRequest) {
       // Memories
       if (data.memories && Array.isArray(data.memories)) {
         const stmt = db.prepare(`
-          INSERT OR REPLACE INTO memories (id, chatId, content, type, importance, keywords, createdAt, lastAccessed, accessCount)
+          INSERT OR REPLACE INTO memories (id, chat_id, content, type, importance, keywords, created_at, last_accessed_at, access_count)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         for (const mem of data.memories) {
           try {
             stmt.run(
               mem.id,
-              mem.chatId,
+              mem.chatId || mem.chat_id,
               mem.content,
               mem.type,
               mem.importance,
               mem.keywords,
-              mem.createdAt,
-              mem.lastAccessed,
-              mem.accessCount
+              mem.createdAt || mem.created_at,
+              mem.lastAccessed || mem.last_accessed_at,
+              mem.accessCount || mem.access_count
             );
           } catch (e) {
             // Skip errors
