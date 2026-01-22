@@ -5,8 +5,21 @@ import { ToolDefinition, ToolExecutionContext, ToolExecutionResult } from '@/typ
 export type ToolHandler = (inputs: Record<string, any>) => Promise<any>;
 
 class ToolRegistry {
+  private static instance: ToolRegistry;
   private tools: Map<string, ToolDefinition> = new Map();
   private handlers: Map<string, ToolHandler> = new Map();
+  
+  // Singleton pattern to ensure one instance across all imports
+  static getInstance(): ToolRegistry {
+    if (!ToolRegistry.instance) {
+      ToolRegistry.instance = new ToolRegistry();
+    }
+    return ToolRegistry.instance;
+  }
+  
+  private constructor() {
+    // Private constructor for singleton
+  }
   
   /**
    * Register a new tool
@@ -216,7 +229,7 @@ class ToolRegistry {
 }
 
 // Singleton instance
-export const toolRegistry = new ToolRegistry();
+export const toolRegistry = ToolRegistry.getInstance();
 
 // Export the class for testing
 export { ToolRegistry };

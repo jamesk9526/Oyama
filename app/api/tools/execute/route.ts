@@ -1,8 +1,11 @@
 // API route for tool execution
 import { NextRequest, NextResponse } from 'next/server';
-import { toolRegistry } from '@/lib/mcp';
+import { toolRegistry, initializeBuiltInTools } from '@/lib/mcp';
 import { ToolCallLog } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+
+// Ensure tools are initialized
+initializeBuiltInTools();
 
 /**
  * POST /api/tools/execute - Execute a tool

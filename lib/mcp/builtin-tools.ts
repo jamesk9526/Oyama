@@ -2,6 +2,9 @@
 import { ToolDefinition, ToolCategory } from '@/types';
 import { toolRegistry, ToolHandler } from './registry';
 
+// Track initialization
+let toolsInitialized = false;
+
 /**
  * Echo tool - Returns the input as output (for testing)
  */
@@ -220,10 +223,17 @@ const textAnalysisHandler: ToolHandler = async (inputs) => {
  * Initialize built-in tools
  */
 export function initializeBuiltInTools(): void {
+  // Only initialize once
+  if (toolsInitialized) {
+    return;
+  }
+  
   toolRegistry.register(echoTool, echoHandler);
   toolRegistry.register(calculatorTool, calculatorHandler);
   toolRegistry.register(timestampTool, timestampHandler);
   toolRegistry.register(textAnalysisTool, textAnalysisHandler);
+  
+  toolsInitialized = true;
 }
 
 /**
