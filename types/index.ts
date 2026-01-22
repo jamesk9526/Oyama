@@ -261,3 +261,138 @@ export interface LLMResponse {
     totalTokens: number;
   };
 }
+
+// MCP (Model Context Protocol) and Tool types
+export type ToolCategory = 
+  | 'filesystem' 
+  | 'network' 
+  | 'database' 
+  | 'api' 
+  | 'code' 
+  | 'data'
+  | 'ai'
+  | 'system'
+  | 'custom';
+
+export type ToolStatus = 'enabled' | 'disabled' | 'error';
+
+export interface ToolDefinition {
+  id: string;
+  name: string;
+  description: string;
+  category: ToolCategory;
+  version: string;
+  enabled: boolean;
+  openSource: boolean;
+  permissions: string[];
+  inputSchema: ToolInputSchema;
+  outputSchema?: ToolOutputSchema;
+  metadata?: ToolMetadata;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ToolInputSchema {
+  type: 'object';
+  properties: Record<string, ToolSchemaProperty>;
+  required?: string[];
+}
+
+export interface ToolSchemaProperty {
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  description?: string;
+  enum?: any[];
+  default?: any;
+  items?: ToolSchemaProperty;
+  properties?: Record<string, ToolSchemaProperty>;
+}
+
+export interface ToolOutputSchema {
+  type: 'object';
+  properties: Record<string, ToolSchemaProperty>;
+}
+
+export interface ToolMetadata {
+  author?: string;
+  repository?: string;
+  documentation?: string;
+  tags?: string[];
+  requiresAuth?: boolean;
+  rateLimits?: {
+    requestsPerMinute?: number;
+    requestsPerHour?: number;
+  };
+}
+
+export interface ToolCallLog {
+  id: string;
+  toolId: string;
+  toolName: string;
+  chatId?: string;
+  agentId?: string;
+  inputs: Record<string, any>;
+  outputs?: any;
+  status: 'success' | 'error' | 'pending';
+  error?: string;
+  duration?: number;
+  timestamp: string;
+  metadata?: {
+    model?: string;
+    provider?: string;
+  };
+}
+
+export interface ToolExecutionContext {
+  toolId: string;
+  inputs: Record<string, any>;
+  chatId?: string;
+  agentId?: string;
+  timeout?: number;
+  retryPolicy?: {
+    maxRetries: number;
+    backoffMs: number;
+  };
+}
+
+export interface ToolExecutionResult {
+  success: boolean;
+  output?: any;
+  error?: string;
+  metadata?: {
+    duration: number;
+    timestamp: string;
+  };
+}
+
+// MCP Protocol types
+export interface MCPMessage {
+  jsonrpc: '2.0';
+  id?: string | number;
+  method?: string;
+  params?: any;
+  result?: any;
+  error?: MCPError;
+}
+
+export interface MCPError {
+  code: number;
+  message: string;
+  data?: any;
+}
+
+export interface MCPToolRegistration {
+  name: string;
+  description: string;
+  inputSchema: ToolInputSchema;
+  outputSchema?: ToolOutputSchema;
+}
+
+export interface MCPToolCall {
+  name: string;
+  arguments: Record<string, any>;
+}
+
+export interface MCPToolResponse {
+  content: any;
+  isError?: boolean;
+}

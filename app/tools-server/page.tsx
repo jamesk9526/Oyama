@@ -4,37 +4,32 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Server, Wrench, Activity, Settings, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Server, Wrench, Activity, Settings, CheckCircle, XCircle, Clock, Loader, RefreshCw } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-
-interface ToolDefinition {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  enabled: boolean;
-  openSource: boolean;
-  permissions: string[];
-}
-
-interface ToolCallLog {
-  id: string;
-  toolName: string;
-  timestamp: string;
-  status: 'success' | 'error' | 'pending';
-  duration?: number;
-  error?: string;
-}
+import { useToolsStore } from '@/lib/stores/tools';
 
 export default function ToolsServerPage() {
-  const [tools, setTools] = useState<ToolDefinition[]>([]);
-  const [logs, setLogs] = useState<ToolCallLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { tools, logs, loading, error, fetchTools, fetchLogs, updateToolStatus } = useToolsStore();
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    // TODO: Fetch tools and logs from API
-    setLoading(false);
-  }, []);
+    fetchTools();
+    fetchLogs();
+  }, [fetchTools, fetchLogs]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchTools(), fetchLogs()]);
+    setRefreshing(false);
+  };
+
+  const handleToggleStatus = async (toolId: string, currentStatus: boolean) => {
+    try {
+      await updateToolStatus(toolId, !currentStatus);
+    } catch (error) {
+      console.error('Failed to toggle tool status:', error);
+    }
+  };
 
   return (
     <div className="h-full overflow-auto">
@@ -47,11 +42,36 @@ export default function ToolsServerPage() {
               Local, embedded MCP-compatible tool orchestration engine
             </p>
           </div>
-          <Button variant="secondary">
-            <Settings className="w-4 h-4 mr-2" />
-            Configure
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button variant="secondary">
+              <Settings className="w-4 h-4 mr-2" />
+              Configure
+            </Button>
+          </div>
         </div>
+
+        {/* Error display */}
+        {error && (
+          <Card className="bg-destructive/10 border-destructive/20">
+            <CardContent className="pt-6">
+              <div className="flex items-start space-x-3">
+                <XCircle className="w-5 h-5 text-destructive mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-destructive">Error</p>
+                  <p className="text-muted-foreground mt-1">{error}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Info Panel */}
         <Card className="bg-primary/5 border-primary/20">
@@ -129,7 +149,13 @@ export default function ToolsServerPage() {
           </TabsList>
 
           <TabsContent value="tools" className="space-y-4">
-            {tools.length === 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="flex items-center justify-center py-12">
+                  <Loader className="w-8 h-8 animate-spin text-primary" />
+                </CardContent>
+              </Card>
+            ) : tools.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Wrench className="w-12 h-12 text-muted-foreground mb-4" />
@@ -146,9 +172,19 @@ export default function ToolsServerPage() {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <CardTitle className="text-lg">{tool.name}</CardTitle>
-                        <Badge variant={tool.enabled ? 'success' : 'default'}>
-                          {tool.enabled ? 'Enabled' : 'Disabled'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={tool.enabled ? 'success' : 'default'}>
+                            {tool.enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleToggleStatus(tool.id, tool.enabled)}
+                            className="h-6 w-6 p-0"
+                          >
+                            {tool.enabled ? '⏸' : '▶'}
+                          </Button>
+                        </div>
                       </div>
                       <CardDescription>{tool.description}</CardDescription>
                     </CardHeader>
@@ -161,6 +197,9 @@ export default function ToolsServerPage() {
                               Open Source
                             </Badge>
                           )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          v{tool.version}
                         </div>
                       </div>
                     </CardContent>
