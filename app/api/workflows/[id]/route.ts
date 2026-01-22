@@ -1,6 +1,6 @@
 // API route for individual workflow operations
 import { NextRequest, NextResponse } from 'next/server';
-import { crewQueries } from '@/lib/db/queries';
+import { workflowQueries } from '@/lib/db/queries';
 
 /**
  * GET /api/workflows/[id] - Get a single workflow
@@ -10,32 +10,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const crew = crewQueries.getById(params.id);
+    const workflow = workflowQueries.getById(params.id);
     
-    if (!crew) {
+    if (!workflow) {
       return NextResponse.json(
         { error: 'Workflow not found' },
         { status: 404 }
       );
     }
-    
-    // Transform crew to workflow format
-    const workflow = {
-      id: crew.id,
-      name: crew.name,
-      description: crew.description,
-      status: crew.status || 'draft',
-      stages: crew.agents.map((agentId: string, index: number) => ({
-        id: `stage-${index}`,
-        name: `Stage ${index + 1}`,
-        agentId,
-        status: 'pending',
-        requiresApproval: false,
-      })),
-      workflowType: crew.workflowType,
-      createdAt: crew.createdAt,
-      updatedAt: crew.updatedAt,
-    };
     
     return NextResponse.json({ workflow });
   } catch (error: any) {
@@ -58,8 +40,8 @@ export async function PUT(
     const body = await request.json();
     const { name, description, stages, workflowType, status } = body;
     
-    // Get existing crew
-    const existing = crewQueries.getById(params.id);
+    // Get existing workflow
+    const existing = workflowQueries.getById(params.id);
     if (!existing) {
       return NextResponse.json(
         { error: 'Workflow not found' },
@@ -67,47 +49,25 @@ export async function PUT(
       );
     }
     
-    // Extract agent IDs from stages if provided
-    const agents = stages 
-      ? stages.map((stage: { agentId: string }) => stage.agentId).filter(Boolean)
-      : existing.agents;
-    
-    // Update crew
-    const updated = {
-      ...existing,
+    // Update workflow
+    const updates = {
       name: name || existing.name,
       description: description !== undefined ? description : existing.description,
-      agents,
+      stages: stages || existing.stages,
       workflowType: workflowType || existing.workflowType,
       status: status || existing.status,
-      updatedAt: new Date().toISOString(),
     };
     
-    crewQueries.update(params.id, updated);
+    const updated = workflowQueries.update(params.id, updates);
     
-    // Transform back to workflow format
-    const workflow = {
-      id: updated.id,
-      name: updated.name,
-      description: updated.description,
-      status: updated.status,
-      stages: (stages || existing.agents.map((agentId: string, index: number) => ({
-        agentId,
-        name: `Stage ${index + 1}`,
-        requiresApproval: false,
-      }))).map((stage: any, index: number) => ({
-        id: `stage-${index}`,
-        name: stage.name || `Stage ${index + 1}`,
-        agentId: stage.agentId,
-        status: 'pending',
-        requiresApproval: stage.requiresApproval || false,
-      })),
-      workflowType: updated.workflowType,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
+    if (!updated) {
+      return NextResponse.json(
+        { error: 'Failed to update workflow' },
+        { status: 500 }
+      );
+    }
     
-    return NextResponse.json({ workflow });
+    return NextResponse.json({ workflow: updated });
   } catch (error: any) {
     console.error('Error updating workflow:', error);
     return NextResponse.json(
@@ -126,7 +86,7 @@ export async function DELETE(
 ) {
   try {
     // Check if workflow exists
-    const existing = crewQueries.getById(params.id);
+    const existing = workflowQueries.getById(params.id);
     
     if (!existing) {
       return NextResponse.json(
@@ -135,7 +95,7 @@ export async function DELETE(
       );
     }
     
-    crewQueries.delete(params.id);
+    workflowQueries.delete(params.id);
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

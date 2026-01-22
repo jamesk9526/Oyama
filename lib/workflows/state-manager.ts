@@ -1,5 +1,6 @@
 // Workflow state persistence and management
 import type { WorkflowExecutionResult, WorkflowStepResult, WorkflowDefinition } from './types';
+import { workflowStateQueries, type WorkflowStateRecord } from '@/lib/db/queries';
 
 export interface WorkflowState {
   id: string;
@@ -50,6 +51,7 @@ export class WorkflowStateManager {
 
     this.states.set(workflowId, state);
     this.createSnapshot(workflowId);
+    this.persistState(state);
     
     return state;
   }
@@ -58,7 +60,18 @@ export class WorkflowStateManager {
    * Get workflow state
    */
   getState(workflowId: string): WorkflowState | undefined {
-    return this.states.get(workflowId);
+    // Try in-memory first
+    let state = this.states.get(workflowId);
+    
+    // If not in memory, try loading from database
+    if (!state) {
+      state = this.loadStateFromDb(workflowId);
+      if (state) {
+        this.states.set(workflowId, state);
+      }
+    }
+    
+    return state;
   }
 
   /**
@@ -81,6 +94,7 @@ export class WorkflowStateManager {
     }
 
     this.createSnapshot(workflowId);
+    this.persistState(state);
   }
 
   /**
@@ -94,6 +108,7 @@ export class WorkflowStateManager {
 
     state.currentStepIndex = stepIndex;
     this.createSnapshot(workflowId);
+    this.persistState(state);
   }
 
   /**
@@ -107,6 +122,7 @@ export class WorkflowStateManager {
 
     state.steps.push(stepResult);
     this.createSnapshot(workflowId);
+    this.persistState(state);
   }
 
   /**
@@ -120,6 +136,7 @@ export class WorkflowStateManager {
 
     state.context = { ...state.context, ...context };
     this.createSnapshot(workflowId);
+    this.persistState(state);
   }
 
   /**
@@ -135,6 +152,7 @@ export class WorkflowStateManager {
     state.status = 'failed';
     state.endTime = new Date();
     this.createSnapshot(workflowId);
+    this.persistState(state);
   }
 
   /**
@@ -165,6 +183,7 @@ export class WorkflowStateManager {
     state.error = result.error;
     
     this.createSnapshot(workflowId);
+    this.persistState(state);
   }
 
   /**
@@ -265,6 +284,70 @@ export class WorkflowStateManager {
     }
 
     return count;
+  }
+
+  /**
+   * Persist workflow state to database
+   */
+  private persistState(state: WorkflowState): void {
+    try {
+      const record: WorkflowStateRecord = {
+        id: state.id,
+        workflowId: state.id,
+        crewId: state.crewId,
+        crewName: state.crewName,
+        workflowDefinition: JSON.stringify(state.workflowDefinition),
+        status: state.status,
+        currentStepIndex: state.currentStepIndex,
+        steps: JSON.stringify(state.steps),
+        startTime: state.startTime.toISOString(),
+        endTime: state.endTime?.toISOString(),
+        pausedAt: state.pausedAt?.toISOString(),
+        resumedAt: state.resumedAt?.toISOString(),
+        error: state.error,
+        context: JSON.stringify(state.context),
+        createdAt: state.startTime.toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const existing = workflowStateQueries.getById(state.id);
+      if (existing) {
+        workflowStateQueries.update(state.id, record);
+      } else {
+        workflowStateQueries.create(record);
+      }
+    } catch (error) {
+      console.error('Failed to persist workflow state:', error);
+    }
+  }
+
+  /**
+   * Load workflow state from database
+   */
+  private loadStateFromDb(workflowId: string): WorkflowState | undefined {
+    try {
+      const record = workflowStateQueries.getById(workflowId);
+      if (!record) return undefined;
+
+      return {
+        id: record.id,
+        crewId: record.crewId,
+        crewName: record.crewName,
+        workflowDefinition: JSON.parse(record.workflowDefinition),
+        status: record.status,
+        currentStepIndex: record.currentStepIndex,
+        steps: JSON.parse(record.steps),
+        startTime: new Date(record.startTime),
+        endTime: record.endTime ? new Date(record.endTime) : undefined,
+        pausedAt: record.pausedAt ? new Date(record.pausedAt) : undefined,
+        resumedAt: record.resumedAt ? new Date(record.resumedAt) : undefined,
+        error: record.error,
+        context: JSON.parse(record.context),
+      };
+    } catch (error) {
+      console.error('Failed to load workflow state from database:', error);
+      return undefined;
+    }
   }
 }
 
