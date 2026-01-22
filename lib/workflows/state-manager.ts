@@ -37,8 +37,12 @@ export class WorkflowStateManager {
     workflow: WorkflowDefinition,
     initialInput: string
   ): WorkflowState {
+    // Generate a unique state ID separate from workflow ID
+    // This allows multiple executions of the same workflow
+    const stateId = `${workflowId}-${Date.now()}`;
+    
     const state: WorkflowState = {
-      id: workflowId,
+      id: stateId,
       crewId,
       crewName,
       workflowDefinition: workflow,
@@ -46,12 +50,12 @@ export class WorkflowStateManager {
       currentStepIndex: 0,
       steps: [],
       startTime: new Date(),
-      context: { initialInput },
+      context: { initialInput, workflowId },
     };
 
-    this.states.set(workflowId, state);
-    this.createSnapshot(workflowId);
-    this.persistState(state);
+    this.states.set(stateId, state);
+    this.createSnapshot(stateId);
+    this.persistState(state, workflowId);
     
     return state;
   }
@@ -289,11 +293,14 @@ export class WorkflowStateManager {
   /**
    * Persist workflow state to database
    */
-  private persistState(state: WorkflowState): void {
+  private persistState(state: WorkflowState, workflowId?: string): void {
     try {
+      // Extract workflowId from context if not provided
+      const wfId = workflowId || (state.context.workflowId as string) || state.id;
+      
       const record: WorkflowStateRecord = {
         id: state.id,
-        workflowId: state.id,
+        workflowId: wfId,
         crewId: state.crewId,
         crewName: state.crewName,
         workflowDefinition: JSON.stringify(state.workflowDefinition),
