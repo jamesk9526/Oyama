@@ -35,10 +35,13 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // List workflow states
-      const filters: Parameters<typeof workflowStateManager.listStates>[0] = {};
+      const filters: {
+        status?: 'pending' | 'running' | 'paused' | 'completed' | 'failed';
+        crewId?: string;
+      } = {};
       
       if (status) {
-        filters.status = status as Parameters<typeof workflowStateManager.listStates>[0]['status'];
+        filters.status = status as 'pending' | 'running' | 'paused' | 'completed' | 'failed';
       }
       if (crewId) {
         filters.crewId = crewId;

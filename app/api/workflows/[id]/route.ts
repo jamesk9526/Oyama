@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const crew = crewQueries.get(params.id);
+    const crew = crewQueries.getById(params.id);
     
     if (!crew) {
       return NextResponse.json(
@@ -25,7 +25,7 @@ export async function GET(
       name: crew.name,
       description: crew.description,
       status: crew.status || 'draft',
-      stages: crew.agentIds.map((agentId, index) => ({
+      stages: crew.agents.map((agentId: string, index: number) => ({
         id: `stage-${index}`,
         name: `Stage ${index + 1}`,
         agentId,
@@ -59,7 +59,7 @@ export async function PUT(
     const { name, description, stages, workflowType, status } = body;
     
     // Get existing crew
-    const existing = crewQueries.get(params.id);
+    const existing = crewQueries.getById(params.id);
     if (!existing) {
       return NextResponse.json(
         { error: 'Workflow not found' },
@@ -68,16 +68,16 @@ export async function PUT(
     }
     
     // Extract agent IDs from stages if provided
-    const agentIds = stages 
-      ? stages.map((stage: any) => stage.agentId).filter(Boolean)
-      : existing.agentIds;
+    const agents = stages 
+      ? stages.map((stage: { agentId: string }) => stage.agentId).filter(Boolean)
+      : existing.agents;
     
     // Update crew
     const updated = {
       ...existing,
       name: name || existing.name,
       description: description !== undefined ? description : existing.description,
-      agentIds,
+      agents,
       workflowType: workflowType || existing.workflowType,
       status: status || existing.status,
       updatedAt: new Date().toISOString(),
@@ -91,7 +91,7 @@ export async function PUT(
       name: updated.name,
       description: updated.description,
       status: updated.status,
-      stages: (stages || existing.agentIds.map((agentId, index) => ({
+      stages: (stages || existing.agents.map((agentId: string, index: number) => ({
         agentId,
         name: `Stage ${index + 1}`,
         requiresApproval: false,
@@ -125,14 +125,17 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const success = crewQueries.delete(params.id);
+    // Check if workflow exists
+    const existing = crewQueries.getById(params.id);
     
-    if (!success) {
+    if (!existing) {
       return NextResponse.json(
         { error: 'Workflow not found' },
         { status: 404 }
       );
     }
+    
+    crewQueries.delete(params.id);
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       name: crew.name,
       description: crew.description,
       status: crew.status || 'draft',
-      stages: crew.agentIds.map((agentId, index) => ({
+      stages: crew.agents.map((agentId: string, index: number) => ({
         id: `stage-${index}`,
         name: `Stage ${index + 1}`,
         agentId,
@@ -55,16 +55,16 @@ export async function POST(request: NextRequest) {
     }
     
     // Extract agent IDs from stages
-    const agentIds = stages.map((stage: any) => stage.agentId).filter(Boolean);
+    const agents = stages.map((stage: { agentId: string }) => stage.agentId).filter(Boolean);
     
     // Create crew (which serves as a workflow)
     const crew = {
       id: crypto.randomUUID(),
       name,
       description: description || '',
-      agentIds,
+      agents,
       workflowType,
-      status: 'draft',
+      status: 'idle' as const,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
