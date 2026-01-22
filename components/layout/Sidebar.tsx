@@ -14,18 +14,30 @@ import {
   Search,
   Trash2,
   Code2,
-  Sparkles
+  Sparkles,
+  Users,
+  GitBranch,
+  Server,
+  Library,
+  Database,
+  Cpu,
+  HelpCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useUIStore } from '@/lib/stores/ui';
 import { useEffect, useState } from 'react';
 
 const navigation = [
-  { name: 'Chats', href: '/chats', icon: MessageSquare },
-  { name: 'Agent Playground', href: '/playground', icon: Sparkles },
-  { name: 'Tooling', href: '/tooling', icon: Code2 },
-  { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'Chat', href: '/chats', icon: MessageSquare },
+  { name: 'Agents', href: '/agents', icon: Users },
+  { name: 'Crews', href: '/crews', icon: Sparkles },
+  { name: 'Workflows', href: '/workflows', icon: GitBranch },
+  { name: 'Tools Server', href: '/tools-server', icon: Server },
+  { name: 'Library', href: '/library', icon: Library },
+  { name: 'Models / Providers', href: '/models', icon: Cpu },
+  { name: 'Memory', href: '/memory', icon: Database },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Help', href: '/help', icon: HelpCircle },
 ];
 
 export const Sidebar = () => {
