@@ -815,7 +815,7 @@ Oyama is a comprehensive AI Agent Collaboration Platform designed for building, 
 
 ### 📋 TODO - Phase 2: Short-term (3-6 months)
 
-#### Autonomous Task Planning (AutoGPT-like)
+#### Autonomous Task Planning (MCP Tools Server)
 - [ ] Goal decomposition algorithm
 - [ ] Task dependency resolution
 - [ ] Dynamic task tree generation
@@ -1105,7 +1105,7 @@ Oyama is a comprehensive AI Agent Collaboration Platform designed for building, 
 | README.md | ✅ Complete | Project overview and getting started |
 | TODO.md | ✅ Complete | Detailed task list with progress tracking |
 | FEATURES.md | ✅ Complete | Feature enhancement summary |
-| FEATURES_ROADMAP.md | ✅ Complete | AutoGPT capabilities and advanced features |
+| FEATURES_ROADMAP.md | ✅ Complete | MCP Tools Server capabilities and advanced features |
 | FEATURES_COMPREHENSIVE.md | ✅ Complete | This document - complete feature catalog |
 | ARCHITECTURE.md | ✅ Complete | System design and architecture |
 | API_REFERENCE.md | ✅ Complete | Complete API documentation |

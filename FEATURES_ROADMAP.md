@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-1. [AutoGPT-like Capabilities](#autogpt-like-capabilities)
+1. [MCP Tools Server Capabilities](#mcp-tools-server-capabilities)
 2. [Document Editing Suite](#document-editing-suite)
 3. [Multi-Output Continuation](#multi-output-continuation)
 4. [Agent System Enhancements](#agent-system-enhancements)
@@ -15,7 +15,9 @@
 
 ---
 
-## AutoGPT-like Capabilities
+## MCP Tools Server Capabilities
+
+**Description**: A local, embedded MCP-compatible tool orchestration engine that runs fully locally, exposing tools to agents & crews. The MCP Tools Server tracks stages, memory, artifacts, and approvals, is inspectable and interruptible, and uses only open-source tools.
 
 ### 1. Autonomous Task Planning
 
