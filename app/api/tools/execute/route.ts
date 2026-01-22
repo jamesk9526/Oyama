@@ -1,6 +1,7 @@
 // API route for tool execution
 import { NextRequest, NextResponse } from 'next/server';
 import { toolRegistry, initializeBuiltInTools } from '@/lib/mcp';
+import { toolLogsDb } from '@/lib/db/queries';
 import { ToolCallLog } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -62,8 +63,13 @@ export async function POST(request: NextRequest) {
       timestamp: result.metadata?.timestamp || new Date().toISOString(),
     };
     
-    // In a real implementation, we would save this log to the database
-    // For now, just return it
+    // Save log to database
+    try {
+      toolLogsDb.create(log);
+    } catch (error) {
+      console.error('Failed to save tool log to database:', error);
+      // Continue even if logging fails
+    }
     
     return NextResponse.json({
       result: result.output,

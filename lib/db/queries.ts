@@ -973,3 +973,110 @@ export const memoryQueries = {
     stmt.run(id);
   },
 };
+
+// Tool Logs queries
+export const toolLogsDb = {
+  create: (log: {
+    id: string;
+    toolId: string;
+    toolName: string;
+    chatId?: string;
+    agentId?: string;
+    inputs: Record<string, any>;
+    outputs?: any;
+    status: 'success' | 'error' | 'pending';
+    error?: string;
+    duration?: number;
+    timestamp: string;
+  }) => {
+    const db = getDatabase();
+    if (!hasTable('tool_logs')) return;
+    
+    const stmt = db.prepare(`
+      INSERT INTO tool_logs (
+        id, toolId, toolName, chatId, agentId, inputs, outputs, 
+        status, error, duration, timestamp
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      log.id,
+      log.toolId,
+      log.toolName,
+      log.chatId || null,
+      log.agentId || null,
+      JSON.stringify(log.inputs),
+      log.outputs ? JSON.stringify(log.outputs) : null,
+      log.status,
+      log.error || null,
+      log.duration || null,
+      log.timestamp
+    );
+  },
+
+  getAll: (filters?: {
+    toolId?: string;
+    status?: 'success' | 'error' | 'pending';
+    limit?: number;
+  }) => {
+    const db = getDatabase();
+    if (!hasTable('tool_logs')) return [];
+    
+    let query = 'SELECT * FROM tool_logs WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.toolId) {
+      query += ' AND toolId = ?';
+      params.push(filters.toolId);
+    }
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    query += ' ORDER BY timestamp DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const rows = db.prepare(query).all(...params) as any[];
+    
+    return rows.map(row => ({
+      ...row,
+      inputs: JSON.parse(row.inputs || '{}'),
+      outputs: row.outputs ? JSON.parse(row.outputs) : null,
+    }));
+  },
+
+  getById: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('tool_logs')) return null;
+    
+    const row = db.prepare('SELECT * FROM tool_logs WHERE id = ?').get(id) as any;
+    if (!row) return null;
+    
+    return {
+      ...row,
+      inputs: JSON.parse(row.inputs || '{}'),
+      outputs: row.outputs ? JSON.parse(row.outputs) : null,
+    };
+  },
+
+  delete: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('tool_logs')) return;
+    
+    const stmt = db.prepare('DELETE FROM tool_logs WHERE id = ?');
+    stmt.run(id);
+  },
+
+  deleteAll: () => {
+    const db = getDatabase();
+    if (!hasTable('tool_logs')) return;
+    
+    db.prepare('DELETE FROM tool_logs').run();
+  },
+};

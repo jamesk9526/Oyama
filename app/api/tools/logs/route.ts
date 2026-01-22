@@ -1,23 +1,24 @@
 // API route for tool call logs
 import { NextRequest, NextResponse } from 'next/server';
+import { toolLogsDb } from '@/lib/db/queries';
 
 /**
  * GET /api/tools/logs - Get tool call logs
- * 
- * Note: In a full implementation, this would query a database.
- * For now, we return an empty array since we're not persisting logs yet.
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     
-    const toolId = searchParams.get('toolId');
-    const status = searchParams.get('status');
+    const toolId = searchParams.get('toolId') || undefined;
+    const status = searchParams.get('status') as 'success' | 'error' | 'pending' | undefined;
     const limit = parseInt(searchParams.get('limit') || '100');
     
-    // In a real implementation, query the database for logs
-    // For now, return empty array
-    const logs: any[] = [];
+    // Query the database for logs
+    const logs = toolLogsDb.getAll({
+      toolId,
+      status,
+      limit,
+    });
     
     return NextResponse.json({
       logs,

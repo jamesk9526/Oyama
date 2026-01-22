@@ -210,6 +210,23 @@ function initializeTables(db: Database.Database): void {
     )
   `);
 
+  // Tool call logs table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tool_logs (
+      id TEXT PRIMARY KEY,
+      toolId TEXT NOT NULL,
+      toolName TEXT NOT NULL,
+      chatId TEXT,
+      agentId TEXT,
+      inputs TEXT NOT NULL,
+      outputs TEXT,
+      status TEXT NOT NULL,
+      error TEXT,
+      duration INTEGER,
+      timestamp TEXT NOT NULL
+    )
+  `);
+
   console.log('Database tables initialized successfully');
 }
 
