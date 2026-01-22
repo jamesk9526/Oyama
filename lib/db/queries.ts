@@ -210,17 +210,62 @@ export const agentQueries = {
   },
 };
 
+const normalizeTemplate = (template: any): Template => {
+  const body = template.body ?? template.content ?? '';
+  const isFavorite = template.isFavorite ?? template.is_favorite ?? false;
+  const workspaceId = template.workspaceId ?? template.workspace_id ?? null;
+  const createdAt = template.createdAt ?? template.created_at ?? '';
+  const updatedAt = template.updatedAt ?? template.updated_at ?? '';
+  
+  let tags: string[] = [];
+  if (Array.isArray(template.tags)) {
+    tags = template.tags;
+  } else if (typeof template.tags === 'string') {
+    try {
+      const parsed = JSON.parse(template.tags);
+      tags = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      tags = [];
+    }
+  }
+  
+  let variables: Template['variables'] = [];
+  if (Array.isArray(template.variables)) {
+    variables = template.variables;
+  } else if (typeof template.variables === 'string') {
+    try {
+      const parsed = JSON.parse(template.variables);
+      variables = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      variables = [];
+    }
+  }
+  
+  return {
+    ...template,
+    body,
+    isFavorite,
+    workspaceId,
+    createdAt,
+    updatedAt,
+    tags,
+    variables,
+  } as Template;
+};
+
 // Template queries
 export const templateQueries = {
   getAll: () => {
     const db = getDatabase();
     const orderByColumn = hasColumn('templates', 'updated_at') ? 'updated_at' : 'updatedAt';
-    return db.prepare(`SELECT * FROM templates ORDER BY ${orderByColumn} DESC`).all() as any[];
+    const rows = db.prepare(`SELECT * FROM templates ORDER BY ${orderByColumn} DESC`).all() as any[];
+    return rows.map(normalizeTemplate) as Template[];
   },
 
   getById: (id: string) => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM templates WHERE id = ?').get(id) as any;
+    const row = db.prepare('SELECT * FROM templates WHERE id = ?').get(id) as any;
+    return row ? normalizeTemplate(row) : undefined;
   },
 
   create: (template: Template) => {
