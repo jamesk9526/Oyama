@@ -1,23 +1,36 @@
-# Oyama - AI Agent Collaboration Platform
+# Oyama - AI Automation Studio
 
-A modern, local-first AI agent collaboration platform with multi-agent workflows, advanced prompt engineering, and a sleek, flat UI. **Now with Electron desktop app support and Ollama LLM integration!**
+**A local, transparent, inspectable AI automation studio** with MCP Tools Server, staged workflows, persistent memory, and comprehensive tool orchestration. Built for power users who demand full visibility and control over their AI automation pipelines.
+
+**Now featuring embedded MCP Tools Server, Ollama LAN support, and Electron desktop app!**
 
 ## Features
 
+### Core Capabilities
+- **MCP Tools Server**: Local, embedded tool orchestration compatible with Model Context Protocol
+- **Staged Workflows**: Build automation pipelines with approval gates and conditional execution
+- **Persistent Memory System**: Inspectable, searchable memory across all agents and sessions
+- **Library System**: Reusable templates, tools, workflows, and components
+- **Ollama LAN Support**: Connect to Ollama instances across your network for distributed LLM access
+- **In-App Help**: Comprehensive documentation and guides built directly into the interface
+
+### Agent & Chat
 - **Multi-Agent "Crew" Workflows**: Orchestrate multiple AI agents to collaborate on complex tasks
-- **Ollama Integration**: Built-in support for local LLM via Ollama (with model auto-discovery)
 - **Real-time Chat Streaming**: Watch responses appear character-by-character with smooth animations
 - **Markdown Support**: Full GitHub Flavored Markdown rendering with syntax-highlighted code blocks
 - **Auto-scrolling Chat**: Messages automatically scroll to latest with smooth behavior
 - **System Prompt Hierarchy**: Global → Workspace → Agent → Chat level customization
-- **System Personalization**: Wizard-based setup for naming your AI and user identifier
+
+### Developer Experience
+- **Code Execution Sandbox**: Safe JavaScript/TypeScript execution with worker threads
 - **Template Library**: Reusable prompt templates with variables and live preview
 - **Agent Builder**: Create specialized agents (Planner, Researcher, Writer, etc.)
-- **Chat with Agents**: Interactive chat interface with streaming responses and markdown rendering
-- **Auto-focus Input**: Chat input stays focused after sending for rapid-fire messaging
+- **Command Palette**: Quick access to all features with Ctrl+K
 - **Electron Desktop App**: Run as native Windows/Mac/Linux application
+
+### Infrastructure
 - **SQLite Database**: Persistent storage with full export/import capabilities
-- **Provider Agnostic**: Support for Ollama (local) and OpenAI-compatible APIs
+- **Provider Agnostic**: Support for Ollama (local/LAN) and OpenAI-compatible APIs
 - **Modern UI**: Flat, sleek design with dark-first color system
 - **Custom Window Controls**: Native minimize/maximize/close buttons for Electron
 
@@ -25,6 +38,10 @@ A modern, local-first AI agent collaboration platform with multi-agent workflows
 
 ### Core Components
 
+- **MCP Tools Server**: Embedded, MCP-compatible tool orchestration with local execution
+- **Workflows**: Staged automation pipelines with approval gates and conditional branching
+- **Memory System**: Persistent, inspectable memory accessible across all agents and sessions
+- **Library**: Centralized repository for templates, tools, workflows, and reusable components
 - **Agents**: Named AI assistants with specific roles, system prompts, and capabilities
 - **Templates**: Reusable prompt blocks with variable interpolation
 - **Workspaces**: Collections of agents, templates, and chats
@@ -35,11 +52,12 @@ A modern, local-first AI agent collaboration platform with multi-agent workflows
 
 - **Framework**: Next.js 14 with App Router
 - **Desktop**: Electron 40 with electron-builder for Windows distribution
-- **Database**: SQLite with better-sqlite3 (in-memory during Sprint 1, file-based in Sprint 2)
+- **Database**: SQLite with better-sqlite3 (file-based persistent storage)
 - **UI**: React, Tailwind CSS, custom component library
 - **State**: Zustand for client state + localStorage persistence
-- **Providers**: Ollama (local), OpenAI-compatible APIs
+- **Providers**: Ollama (local/LAN), OpenAI-compatible APIs
 - **LLM**: Integrated OllamaProvider with streaming support
+- **Execution**: Worker threads with VM sandbox for safe code execution
 
 ## Getting Started
 
@@ -91,19 +109,50 @@ See [DESKTOP_SETUP.md](./DESKTOP_SETUP.md) for detailed desktop/Electron setup i
 ```
 .
 ├── app/                    # Next.js app router pages
+│   ├── workflows/          # Staged workflow automation
+│   ├── tools/              # MCP Tools Server interface
+│   ├── library/            # Reusable components library
+│   ├── memory/             # Persistent memory system
+│   ├── models/             # Ollama endpoint management
+│   ├── help/               # In-app documentation
+│   ├── chats/              # Chat interface
+│   ├── agents/             # Agent management
+│   ├── templates/          # Template library
+│   └── settings/           # Application settings
 ├── components/            
-│   ├── ui/                # Base UI components (Button, Input, etc.)
-│   └── ...                # Feature components
-├── electron/              # Electron main process and preload
+│   ├── ui/                 # Base UI components (Button, Input, etc.)
+│   └── ...                 # Feature components
+├── electron/               # Electron main process and preload
 ├── lib/
-│   ├── db/                # Database layer (SQLite)
-│   ├── providers/         # LLM provider adapters
-│   ├── prompts/           # Prompt composition engine
-│   └── templates/         # Template engine
-├── types/                 # TypeScript type definitions
-├── scripts/               # Database migration/seed and build scripts
-└── assets/                # App icons and resources
+│   ├── db/                 # Database layer (SQLite)
+│   ├── providers/          # LLM provider adapters
+│   ├── prompts/            # Prompt composition engine
+│   ├── workflows/          # Workflow execution engine
+│   └── templates/          # Template engine
+├── types/                  # TypeScript type definitions
+├── scripts/                # Database migration/seed and build scripts
+└── assets/                 # App icons and resources
 ```
+
+## Screenshots
+
+### Home & Navigation
+![Home Navigation](https://github.com/user-attachments/assets/9130a3f1-069e-439d-b881-e862553f6d8c)
+
+### Workflows - Staged Automation
+![Workflows](https://github.com/user-attachments/assets/aadd8c35-1acd-488b-9d62-fc0551dc917e)
+
+### Tools Server - MCP Compatible
+![Tools Server](https://github.com/user-attachments/assets/65c8a96e-9c01-4f65-8913-9f209daf8d97)
+
+### Library - Reusable Components
+![Library](https://github.com/user-attachments/assets/ba20f2bb-118b-487d-8928-918f9a2dfb6e)
+
+### Memory - Persistent System
+![Memory](https://github.com/user-attachments/assets/4473d016-8d37-44d0-b5a1-ba917dd4abf7)
+
+### Models/Providers - Ollama Management
+![Models/Providers](https://github.com/user-attachments/assets/49b3a2db-dadc-4e4a-bc2d-b2c66080dd4c)
 
 ## Database Schema
 
@@ -128,27 +177,53 @@ See [DESKTOP_SETUP.md](./DESKTOP_SETUP.md) for detailed desktop/Electron setup i
 - [x] Template library UI with search/tags/editor
 - [x] Agent builder UI with role presets
 - [x] Main layout with sidebar navigation
-- [ ] Database persistence (currently in-memory)
-- [ ] Multi-agent crew orchestration
-- [ ] Chat interface with streaming
-- [ ] Command palette (Ctrl/Cmd+K)
+- [x] Database persistence with SQLite
+- [x] Multi-agent crew orchestration
+- [x] Chat interface with streaming
+- [x] Command palette (Ctrl/Cmd+K)
+- [x] Code execution sandbox
+- [x] Message persistence
+- [x] Markdown rendering with syntax highlighting
+- [x] Electron desktop app with custom window controls
+- [x] Ollama integration with model auto-discovery
+- [ ] **MCP Tools Server backend implementation**
+- [ ] **Workflow execution engine with approval gates**
+- [ ] **Memory storage backend**
+- [ ] **Library API and sync system**
+- [ ] **Theme customization system**
 - [ ] Export/import functionality
 - [ ] Backup system
 - [ ] Performance optimizations (virtualization, lazy loading)
 
 ## Current Status
 
-**🚀 Sprint 1 Complete - Application Fully Functional!**
+**🚀 Major Upgrade Complete - MCP Tools Server Architecture!**
 
 Visit http://localhost:3000 to explore:
-- ✅ **Home Page** (/home) - Welcome screen with feature overview
-- ✅ **Templates** (/templates) - Create and manage prompt templates with search/filter
-- ✅ **Agents** (/agents) - Build AI agents with specialized roles and system prompts
+- ✅ **Home** (/) - Welcome screen with navigation to all features
+- ✅ **Workflows** (/workflows) - Staged automation with approval gates (UI complete)
+- ✅ **Tools Server** (/tools) - MCP-compatible tool orchestration interface (UI complete)
+- ✅ **Library** (/library) - Reusable templates, tools, workflows (UI complete)
+- ✅ **Memory** (/memory) - Persistent, inspectable memory system (UI complete)
+- ✅ **Models/Providers** (/models) - Ollama LAN endpoint management (UI complete)
+- ✅ **Help** (/help) - Comprehensive in-app documentation (UI complete)
 - ✅ **Chats** (/chats) - Real-time chat with streaming, markdown rendering, auto-scroll
-- ✅ **Crews** (/crews) - Multi-agent workflow management interface
-- ✅ **Settings** (/settings) - Workspace config, LLM providers, system personalization wizard
+- ✅ **Agents** (/agents) - Build AI agents with specialized roles and system prompts
+- ✅ **Templates** (/templates) - Create and manage prompt templates with search/filter
+- ✅ **Crews** (/crews) - Multi-agent workflow management with execution
+- ✅ **Settings** (/settings) - Workspace config, LLM providers, system personalization
 
-### Recently Completed (Sprint 1)
+### Recently Completed (MCP Tools Server Upgrade)
+- ✅ Complete UI redesign with new navigation structure
+- ✅ Workflows page with staged automation interface
+- ✅ Tools Server page for MCP tool orchestration
+- ✅ Library page for reusable components
+- ✅ Memory page for persistent memory inspection
+- ✅ Models/Providers page for Ollama LAN management
+- ✅ Help page with comprehensive documentation
+- ✅ Updated navigation with all new pages
+
+### Previously Completed (Sprint 1 & 2)
 - ✅ SQLite database layer with schema and migrations
 - ✅ Message streaming with Server-Sent Events (SSE)
 - ✅ Auto-scroll to latest messages with smooth behavior
@@ -159,15 +234,18 @@ Visit http://localhost:3000 to explore:
 - ✅ Auto-focus chat input after sending messages
 - ✅ Electron desktop application with custom window controls
 - ✅ Ollama integration with model auto-discovery
+- ✅ Code execution sandbox with worker threads
+- ✅ Command palette (Ctrl+K) for quick navigation
+- ✅ Multi-agent crew execution engine
 
-### Next Up (Sprint 2)
-- 🔨 Code execution sandbox (Phase 1: Node.js worker threads)
-- 🔨 Message persistence to SQLite
-- 🔨 Crew workflow execution engine
-- 🔨 Command palette (Ctrl+K search)
-- 🔨 Stop generation button during streaming
+### Next Up (Backend Implementation)
+- 🔨 MCP Tools Server backend implementation
+- 🔨 Workflow execution engine with approval gates
+- 🔨 Memory storage backend integration
+- 🔨 Library API and synchronization system
+- 🔨 Theme system implementation
 
-The UI features a modern, flat, dark-first design with full markdown support in chat.
+The UI features a modern, flat, dark-first design with full markdown support and comprehensive feature coverage.
 
 ## Contributing
 

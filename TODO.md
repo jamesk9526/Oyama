@@ -1,11 +1,22 @@
 # Oyama - Project TODO
 
 ## Project Overview
-Oyama is a comprehensive AI Agent Collaboration Platform for building, customizing, and orchestrating AI agents with multi-agent workflows, advanced prompt engineering, and a modern interface.
+Oyama is a comprehensive AI Automation Studio with embedded MCP Tools Server, staged workflows, persistent memory, and transparent tool orchestration. The platform provides local-first, inspectable AI automation for power users.
 
 ---
 
 ## ✅ COMPLETED
+
+### MCP Tools Server Architecture Upgrade
+- [x] Complete UI redesign with new navigation structure
+- [x] Workflows page - Staged automation with approval gates (UI complete)
+- [x] Tools Server page - MCP-compatible tool orchestration (UI complete)
+- [x] Library page - Reusable templates, tools, workflows (UI complete)
+- [x] Memory page - Persistent memory inspection (UI complete)
+- [x] Models/Providers page - Ollama LAN endpoint management (UI complete)
+- [x] Help page - Comprehensive in-app documentation (UI complete)
+- [x] Updated sidebar navigation with all new pages
+- [x] Screenshot documentation for all major features
 
 ### Project Foundation
 - [x] Next.js 14.2.20 project setup with TypeScript
@@ -219,239 +230,323 @@ Oyama is a comprehensive AI Agent Collaboration Platform for building, customizi
 
 ## 🔨 IN PROGRESS / PARTIALLY COMPLETE
 
-None - All Sprint 2 priority features complete!
+### MCP Tools Server Backend
+- [ ] MCP protocol implementation
+- [ ] Tool registration system
+- [ ] Tool execution engine
+- [ ] Tool discovery and indexing
+- [ ] LAN-based tool sharing
+
+### Workflow Execution Engine
+- [ ] Approval gate implementation
+- [ ] Stage execution orchestration
+- [ ] Conditional branching logic
+- [ ] Workflow state persistence
+- [ ] Rollback and error recovery
+
+### Memory System Backend
+- [ ] Memory storage schema
+- [ ] Memory indexing and search
+- [ ] Cross-session memory access
+- [ ] Memory visualization API
+- [ ] Memory export/import
+
+### Library System
+- [ ] Component versioning
+- [ ] Library synchronization
+- [ ] Component sharing API
+- [ ] Template instantiation
+- [ ] Dependency resolution
 
 ---
 
-## 📋 TODO (Highest Priority - Sprint 2)
+## 📋 TODO (Highest Priority - Sprint 3)
 
-### Chat & Message Features
-1. **Markdown Rendering in Chat Messages** (`components/chat/ChatMessage.tsx`)
-   - [x] Install react-markdown and remark plugins
-   - [x] Render markdown in assistant messages
-   - [x] Support for:
-     - [x] Code blocks with syntax highlighting
-     - [x] Lists (ordered and unordered)
-     - [x] Tables
-     - [x] Links and emphasis
-     - [x] Inline code
-   - [x] Copy code button for code blocks
-   - [x] Theme-aware code syntax highlighting
+### 1. MCP Tools Server Implementation
+**Goal**: Implement backend for MCP-compatible tool orchestration
+- [ ] Design MCP protocol adapter layer
+- [ ] Create tool registration API (`app/api/tools/register/route.ts`)
+- [ ] Implement tool execution endpoint (`app/api/tools/execute/route.ts`)
+- [ ] Add tool discovery mechanism
+- [ ] Build tool indexing system
+- [ ] Create tool metadata schema (database)
+- [ ] Implement tool security/sandboxing
+- [ ] Add LAN tool sharing (mDNS discovery)
+- [ ] Test with standard MCP tools
+- [ ] Wire Tools Server page to backend
 
-2. **Code Execution / Sandbox Feature**
-   - [x] Plan architecture for safe code execution:
-     - [x] Option A: Isolated Worker Threads (simple, fast, same-machine only) ✓ CHOSEN
-     - [ ] Option B: Docker containers (secure, scalable, requires Docker)
-     - [ ] Option C: WebAssembly VM (sandboxed, limited capabilities)
-   - [x] Implementation approach: Node.js worker threads with VM sandbox
-   - [x] Code playground in chat for testing snippets (Run button in code blocks)
-   - [x] Execution results display in chat (ExecutionOutput under code blocks)
-   - [x] Error handling and timeout management (5s timeout, captured errors)
-   - [x] Phase 1 Complete:
-     - [x] Worker thread executor with sandbox context
-     - [x] Code sanitizer with blocked module detection
-     - [x] Security policies (NO_NETWORK, NO_FILESYSTEM, etc.)
-     - [x] /api/execute endpoint created
-     - [x] Run button added to code blocks in ChatMessage
-     - [x] Execution state management (running, result display)
-     - [x] Output display with stdout/stderr/error sections
-     - [x] Language filtering (JavaScript/TypeScript only in Phase 1)
+**Status**: UI complete, backend pending
 
-### Message Persistence
-3. **Chat Message History Persistence**
-   - [x] Migrate chat storage from in-memory to SQLite
-   - [x] API routes for chat history (GET/POST/DELETE)
-   - [x] Load message history on chat page mount
-   - [x] Save new messages to database
-   - [x] Delete conversation functionality
-   - [x] Phase Complete:
-     - [x] Messages table created with chatId foreign key
-     - [x] Chats table updated (removed messages TEXT column)
-     - [x] messageQueries: getAllByChatId, create, deleteByChatId
-     - [x] chatQueries: getAll, getById, create, update, delete
-     - [x] /api/messages route (GET with chatId, POST, DELETE)
-     - [x] /api/chats route (GET, POST)
-     - [x] /api/chats/[id] route (GET, PUT, DELETE)
-     - [x] Chat page: session management with sessionStorage
-     - [x] Auto-load messages on mount
-     - [x] Auto-save messages as sent/received
-     - [x] New Chat button to create fresh conversations
-     - [x] Clear Chat button to delete all messages
+### 2. Workflow Execution Engine with Approval Gates
+**Goal**: Enable staged automation with human-in-the-loop approval
+- [ ] Design workflow stage execution model
+- [ ] Create workflow execution API (`app/api/workflows/execute/route.ts`)
+- [ ] Implement approval gate system
+- [ ] Add approval notification UI
+- [ ] Build stage state management
+- [ ] Implement conditional branching
+- [ ] Add workflow pause/resume
+- [ ] Create workflow execution logs
+- [ ] Build rollback mechanism
+- [ ] Wire Workflows page to execution engine
 
-### Crew Workflows
-4. **Multi-Agent Crews Execution** (`lib/workflows/executor.ts`)
-   - [x] Workflow parser
-   - [x] Sequential execution
-   - [x] Parallel execution  
-   - [x] Conditional branching
-   - [x] Variable passing between agents
-   - [x] Error handling and rollback
-   - [x] Execution logging
-   - [x] Phase Complete:
-     - [x] WorkflowExecutor class with execute() method
-     - [x] Sequential: Pass output from one agent to next
-     - [x] Parallel: Execute all agents simultaneously with Promise.allSettled
-     - [x] Conditional: Evaluate conditions (success/failure/always) before executing steps
-     - [x] Agent invocation via Ollama API
-     - [x] Timeout handling per agent (configurable)
-     - [x] WorkflowStepResult tracking (input, output, duration, errors)
-     - [x] WorkflowExecutionResult with overall success/failure
-     - [x] /api/workflows/execute endpoint
-     - [x] CrewExecutionModal component with input form
-     - [x] Real-time execution status display
-     - [x] Step-by-step results with expand/collapse
-     - [x] Integrated into Crews page with Run button
+**Status**: UI complete, execution engine pending
 
-### Medium Priority Features
-5. **Command Palette** (`components/CommandPalette.tsx`)
-   - [ ] Page layout and header
-   - [ ] Crew creation form
-   - [ ] Agent selection and ordering
-   - [ ] Workflow definition (sequential, parallel, conditional)
-   - [ ] Crew execution interface
-   - [ ] Results visualization
-   - [ ] API routes for crew CRUD
+### 3. Memory Storage Backend
+**Goal**: Persistent, inspectable memory across agents and sessions
+- [ ] Design memory storage schema (database)
+- [ ] Create memory API endpoints:
+  - [ ] `app/api/memory/store/route.ts` (create/update)
+  - [ ] `app/api/memory/search/route.ts` (query)
+  - [ ] `app/api/memory/get/route.ts` (retrieve)
+- [ ] Implement memory indexing (tags, embeddings)
+- [ ] Add cross-session memory access
+- [ ] Build memory visualization API
+- [ ] Implement memory lifecycle (TTL, archiving)
+- [ ] Add memory export/import
+- [ ] Create memory search UI
+- [ ] Wire Memory page to backend
 
-4. **Crew Workflow Engine** (`lib/workflows/executor.ts`)
-   - [ ] Workflow parser
-   - [ ] Sequential execution
-   - [ ] Parallel execution
-   - [ ] Conditional branching
-   - [ ] Variable passing between agents
-   - [ ] Error handling and rollback
-   - [ ] Execution logging
+**Status**: UI complete, storage backend pending
 
-### Medium Priority Features
-5. **Command Palette** (`components/CommandPalette.tsx`)
-   - [x] Keyboard shortcut (Ctrl+K)
-   - [x] Command registration system
-   - [x] Fuzzy search
-   - [x] Action categories
-   - [x] Quick navigation
-   - [x] Quick agent/template access
-   - [x] Phase Complete:
-     - [x] CommandPalette component with modal interface
-     - [x] Global Ctrl+K keyboard shortcut handler
-     - [x] ClientLayout wrapper for keyboard event handling
-     - [x] Fuzzy search filtering across all commands
-     - [x] Command categories: navigation, actions, agents, templates, crews
-     - [x] Dynamic command generation from agents/templates/crews
-     - [x] Keyboard navigation (↑↓ arrows, Enter, Esc)
-     - [x] Visual command grouping by category
-     - [x] Quick access to all pages and entities
-     - [x] Sidebar hint with Ctrl+K shortcut display
-     - [x] Search through command labels, descriptions, keywords
+### 4. Library API and Sync System
+**Goal**: Centralized repository for reusable components
+- [ ] Design library component schema
+- [ ] Create library API endpoints:
+  - [ ] `app/api/library/components/route.ts` (list/create)
+  - [ ] `app/api/library/sync/route.ts` (synchronization)
+  - [ ] `app/api/library/install/route.ts` (install components)
+- [ ] Implement component versioning
+- [ ] Add dependency resolution
+- [ ] Build component search/filter
+- [ ] Create template instantiation engine
+- [ ] Add component sharing (export/import)
+- [ ] Wire Library page to backend
 
-6. **Prompt Composition Engine** (`lib/prompts/composer.ts`)
-  - [x] Prompt variable interpolation
-  - [x] System prompt hierarchy (Global → Workspace → Agent → Chat)
-  - [x] Prompt versioning
-  - [ ] Prompt templates with slots
-  - [x] Context injection
+**Status**: UI complete, API pending
 
-7. **Template Variables & Preview**
-   - [ ] Template variable editor in TemplateEditor
-   - [ ] Live preview with sample data
-   - [ ] Variable type validation (string, number, array, etc.)
-   - [ ] Default value support
-   - [ ] Required/optional fields
+### 5. Theme System Implementation
+**Goal**: Customizable UI themes and appearance
+- [ ] Design theme configuration schema
+- [ ] Create theme API (`app/api/themes/route.ts`)
+- [ ] Build theme switcher component
+- [ ] Implement CSS variable injection
+- [ ] Add theme preview
+- [ ] Create default theme presets
+- [ ] Add custom theme editor
+- [ ] Persist theme preferences
+- [ ] Wire to Settings page
 
-8. **Settings Implementation**
-   - [ ] Workspace name/description editing
-   - [ ] Provider configuration (Ollama URL, OpenAI key)
-   - [ ] Default model selection
-   - [ ] Global system prompt setting
-   - [ ] UI theme preferences
-   - [ ] Workspace export/import
-   - [ ] Data backup settings
+**Status**: Not started
 
-### Lower Priority / Polish
-9. **UI Enhancements**
-   - [ ] Loading skeletons for data fetching
-   - [ ] Toast notifications for actions
-   - [ ] Confirmation dialogs with better UX
-   - [ ] Animation transitions
-   - [ ] Accessibility improvements (ARIA labels, keyboard nav)
+---
 
-10. **Analytics & Monitoring**
-    - [ ] Chat usage statistics
-    - [ ] Token usage tracking
-    - [ ] Agent performance metrics
-    - [ ] Error tracking and logging
+## 📋 TODO (Medium Priority - Sprint 4)
 
-11. **Documentation**
-    - [ ] API documentation
-    - [ ] Setup guide for Ollama/OpenAI
-    - [ ] Architecture documentation
-    - [ ] Component storybook
+---
+
+## 📋 TODO (Medium Priority - Sprint 4)
+
+### Ollama LAN Support Enhancement
+- [ ] Implement mDNS discovery for Ollama instances
+- [ ] Add LAN endpoint management UI
+- [ ] Create endpoint health monitoring
+- [ ] Implement load balancing across endpoints
+- [ ] Add failover mechanism
+- [ ] Build endpoint performance metrics
+- [ ] Create endpoint configuration API
+
+### Enhanced Chat Features
+- [ ] Stop generation button during streaming
+- [ ] Message editing and regeneration
+- [ ] Conversation branching
+- [ ] Message bookmarking
+- [ ] Chat export (markdown, JSON)
+- [ ] Multi-modal support (images, files)
+- [ ] Voice input/output integration
+
+### Advanced Workflow Features
+- [ ] Workflow templates library
+- [ ] Visual workflow editor (drag-and-drop)
+- [ ] Workflow scheduling (cron-like)
+- [ ] Workflow triggers (webhooks, events)
+- [ ] Parallel execution optimization
+- [ ] Workflow analytics and insights
+
+### Agent Improvements
+- [ ] Agent capability tags with metadata
+- [ ] Agent performance metrics dashboard
+- [ ] Agent version history viewer
+- [ ] Agent testing console
+- [ ] Per-agent parameter defaults
+- [ ] Agent collaboration patterns
+- [ ] Agent skill composition
+
+---
+
+## 📋 TODO (Lower Priority - Polish & Enhancement)
+
+---
+
+## 📋 TODO (Lower Priority - Polish & Enhancement)
+
+### UI/UX Polish
+- [ ] Loading skeletons for all data fetching
+- [ ] Toast notifications system
+- [ ] Enhanced confirmation dialogs
+- [ ] Smooth animation transitions
+- [ ] Accessibility audit (ARIA, keyboard nav)
+- [ ] Component refinements (buttons, inputs, modals)
+- [ ] Typography consistency audit
+- [ ] Color system refinements
+
+### Data Management
+- [ ] Workspace export/import
+- [ ] Automated backup system
+- [ ] Data migration tools
+- [ ] Import from other platforms
+- [ ] Data archiving system
+
+### Analytics & Monitoring
+- [ ] Usage statistics dashboard
+- [ ] Token usage tracking
+- [ ] Agent performance metrics
+- [ ] Workflow execution analytics
+- [ ] Error tracking and logging
+- [ ] System health monitoring
+
+### Documentation
+- [ ] API documentation (OpenAPI/Swagger)
+- [ ] Setup guide updates
+- [ ] Architecture documentation
+- [ ] Component library documentation
+- [ ] User guide expansion
+- [ ] Video tutorials
+
+### Performance Optimization
+- [ ] Virtualized lists for large datasets
+- [ ] Lazy loading optimization
+- [ ] Code splitting improvements
+- [ ] Database query optimization
+- [ ] Memory usage profiling
+- [ ] Bundle size optimization
 
 ---
 
 ## 🐛 KNOWN ISSUES
 
-1. **Database Issues**
-   - better-sqlite3 native module compilation fails on Windows (ClangCL error)
-   - Current workaround: In-memory storage
-   - Solution needed: Use sqlite3 package or find alternative
+### Critical
+None currently - all blocking issues resolved
 
-2. **TypeScript Configuration**
-   - `forceConsistentCasingInFileNames` not enabled in tsconfig.json
-   - CSS linting warnings for @tailwind and @apply (expected, not errors)
+### Medium Priority
+1. **Database**
+   - better-sqlite3 native module requires rebuild for Electron (Windows)
+   - Current workaround: Working for dev environment
 
-3. **Missing Implementations**
-   - Crews page doesn't exist yet (route `/crews`)
-   - No actual LLM response generation
-   - Chat interface uses placeholder responses
-   - Settings page has no functional form handlers
+2. **UI Polish Needed**
+   - Some empty states need better design
+   - Loading states could be more consistent
+   - Error messages need standardization
+
+3. **Missing Backend Implementation**
+   - MCP Tools Server backend not implemented (UI ready)
+   - Workflow execution engine needs approval gates
+   - Memory storage backend pending
+   - Library sync system pending
 
 ---
 
 ## 📊 FILE STRUCTURE & KEY LOCATIONS
 
-### Pages
-- `app/page.tsx` - Homepage
-- `app/chats/page.tsx` - Chat interface
-- `app/templates/page.tsx` - Template library
-- `app/agents/page.tsx` - Agent management
-- `app/settings/page.tsx` - Settings
-- `app/crews/page.tsx` - **TODO: Create**
+### Pages (Updated Architecture)
+- `app/page.tsx` - Homepage with navigation
+- `app/workflows/page.tsx` - Staged workflow automation (UI complete)
+- `app/tools/page.tsx` - MCP Tools Server interface (UI complete)
+- `app/library/page.tsx` - Reusable components library (UI complete)
+- `app/memory/page.tsx` - Persistent memory system (UI complete)
+- `app/models/page.tsx` - Ollama endpoint management (UI complete)
+- `app/help/page.tsx` - In-app documentation (UI complete)
+- `app/chats/page.tsx` - Chat interface (functional)
+- `app/agents/page.tsx` - Agent management (functional)
+- `app/templates/page.tsx` - Template library (functional)
+- `app/crews/page.tsx` - Multi-agent workflows (functional)
+- `app/settings/page.tsx` - Application settings (functional)
 
 ### Components
-- `components/layout/Sidebar.tsx` - Navigation sidebar
+- `components/layout/Sidebar.tsx` - Navigation sidebar (updated)
 - `components/ui/` - Reusable UI components
-- `components/templates/` - Template-related components
-- `components/agents/` - Agent-related components
+- `components/workflows/` - Workflow components (new)
+- `components/tools/` - Tools Server components (new)
+- `components/library/` - Library components (new)
+- `components/memory/` - Memory components (new)
+- `components/chat/` - Chat components
+- `components/agents/` - Agent components
+- `components/templates/` - Template components
 
 ### State Management
+- `lib/stores/workflows.ts` - **TODO: Create**
+- `lib/stores/tools.ts` - **TODO: Create**
+- `lib/stores/memory.ts` - **TODO: Create**
+- `lib/stores/library.ts` - **TODO: Create**
 - `lib/stores/templates.ts` - Template store
 - `lib/stores/agents.ts` - Agent store
+- `lib/stores/settings.ts` - Settings store
 - `lib/stores/ui.ts` - UI state
 
-### API Routes
-- `app/api/templates/` - Template endpoints
-- `app/api/agents/` - Agent endpoints
-- `app/api/chats/` - **TODO: Create**
-- `app/api/crews/` - **TODO: Create**
+### API Routes (To Be Created)
+- `app/api/tools/` - Tool registration and execution
+- `app/api/workflows/` - Workflow execution with gates
+- `app/api/memory/` - Memory storage and retrieval
+- `app/api/library/` - Library components and sync
+- `app/api/themes/` - Theme management
 
 ### Libraries & Utilities
 - `lib/providers/` - LLM provider implementations
 - `lib/prompts/` - Prompt composition
-- `lib/db/` - Database layer (currently in-memory)
-- `lib/workflows/` - Multi-agent workflow execution
+- `lib/db/` - Database layer (SQLite)
+- `lib/workflows/` - Workflow execution (existing crew system)
+- `lib/mcp/` - **TODO: Create MCP protocol implementation**
 - `types/index.ts` - TypeScript types
 
 ---
 
 ## 🎯 NEXT IMMEDIATE STEPS (Priority Order)
 
-1. Fix build errors and ensure `npm run build` passes
-2. Create crews page and API routes
-3. Implement LLM provider connections (test Ollama first)
-4. Wire chat interface to LLM providers with streaming
-5. Replace in-memory storage with persistent database
-6. Implement command palette
-7. Add more comprehensive error handling
-8. Write documentation
+### Sprint 3 Focus: Backend Implementation
+1. **MCP Tools Server Backend** (Week 1-2)
+   - Design MCP protocol adapter
+   - Implement tool registration API
+   - Build tool execution engine
+   - Add security/sandboxing
+   - Test with standard MCP tools
+
+2. **Workflow Execution Engine** (Week 3-4)
+   - Design approval gate system
+   - Implement stage execution
+   - Add pause/resume functionality
+   - Build rollback mechanism
+   - Wire to Workflows UI
+
+3. **Memory Storage Backend** (Week 5-6)
+   - Design memory schema
+   - Implement storage API
+   - Add indexing and search
+   - Build visualization API
+   - Wire to Memory UI
+
+4. **Library System API** (Week 7-8)
+   - Design library schema
+   - Implement sync system
+   - Add versioning
+   - Build search/filter
+   - Wire to Library UI
+
+5. **Testing & Polish** (Week 9-10)
+   - Integration testing
+   - Performance optimization
+   - Bug fixes
+   - Documentation updates
+   - User feedback incorporation
 
 ---
 
@@ -483,134 +578,57 @@ None - All Sprint 2 priority features complete!
 
 ## 📈 PROGRESS SUMMARY
 
-**Overall Completion: ~75%**
+**Overall Completion: ~70%**
 
-- ✅ Architecture & Setup: 100%
-- ✅ UI & Components: 100%
-- ✅ State Management: 100%
-- ✅ Mobile Responsiveness: 100%
-- ✅ Core Pages: 100% (Homepage, Templates, Agents, Chats, Crews, Settings)
-- ✅ Build System: 100%
-- ✅ Database: 100% (SQLite with better-sqlite3)
-- ✅ LLM Integration: 100% (Ollama with streaming)
-- ✅ Crew Workflows: 100% (Sequential, parallel, conditional execution)
-- ✅ Code Execution: 100% (Worker threads sandbox, Phase 1 complete)
-- ✅ Message Persistence: 100% (Chat history in SQLite)
-- ✅ Command Palette: 100% (Ctrl+K quick search)
-- 📋 Advanced Features: 15%
+### UI/Frontend: 95%
+- ✅ All pages designed and implemented
+- ✅ Navigation structure complete
+- ✅ Component library mature
+- ✅ Mobile responsiveness complete
+- ✅ Command palette and shortcuts
+- 🔨 Minor polish items remaining
 
-**Recent Session Accomplishments (Sprint 2 - ALL COMPLETE):**
-- ✅ Fixed settings infinite loop and personalization wizard
-- ✅ SQLite database integration with full schema
-- ✅ Message streaming with SSE
-- ✅ Auto-scroll and auto-focus in chat
-- ✅ Markdown rendering with GitHub Flavored Markdown
-- ✅ Code execution infrastructure (worker threads, sandbox, security)
-- ✅ Run button for code blocks with execution output
-- ✅ Message persistence to SQLite database
-- ✅ Crew workflow executor (sequential/parallel/conditional)
-- ✅ Command palette with Ctrl+K shortcut
-- ✅ All 5 Sprint 2 tasks completed
+### Backend/Core: 60%
+- ✅ Database layer (SQLite)
+- ✅ Chat and messaging system
+- ✅ Agent management
+- ✅ Crew execution (basic)
+- ✅ Code execution sandbox
+- 🔨 MCP Tools Server backend (pending)
+- 🔨 Workflow approval gates (pending)
+- 🔨 Memory storage backend (pending)
+- 🔨 Library sync system (pending)
 
----
+### Integration: 75%
+- ✅ Ollama integration with streaming
+- ✅ Command palette
+- ✅ Markdown rendering
+- ✅ Code execution
+- ✅ Message persistence
+- 🔨 Theme system (pending)
+- 🔨 Export/import (pending)
 
-**Last Updated:** January 18, 2026
+### Architecture Upgrade (MCP Tools Server): 50%
+- ✅ Complete UI redesign
+- ✅ All new pages implemented (Workflows, Tools, Library, Memory, Models, Help)
+- ✅ Updated navigation
+- ✅ Screenshot documentation
+- 🔨 Backend implementation (5 major components pending)
 
----
+**Recent Session Accomplishments (MCP Tools Server Upgrade):**
+- ✅ Designed and implemented 7 new pages
+- ✅ Completely redesigned navigation structure
+- ✅ Updated branding to "AI Automation Studio"
+- ✅ Added comprehensive feature documentation
+- ✅ Created screenshot gallery
+- ✅ Updated README with new architecture
+- ✅ Restructured TODO with clear Sprint 3 priorities
 
-## 📌 Consolidated TODO (Jan 19, 2026)
-
-### Agent Improvements
-- [ ] Add agent capability tags (technical monospace styling)
-- [ ] Add agent status/availability (idle/running) in UI cards
-- [ ] Add agent performance stats (runs, success rate, avg latency)
-- [ ] Add agent prompt versioning + history viewer
-- [ ] Add agent duplication with editable name + role
-- [ ] Add agent avatar upload + fallback icon policy
-- [ ] Add agent system prompt validation (length, missing fields)
-- [ ] Add agent filter by capability + provider + model
-- [ ] Add per-agent defaults (temperature/topP/maxTokens)
-- [ ] Add agent test console (quick prompt + output preview)
-
-### From code TODOs
-- [ ] Track agent usage metrics in `app/api/agents/metrics/route.ts` (current: totalUses is hardcoded to 0)
-
-### From ZenTODO (Pending)
-#### Phase 1: Critical (Agents & Crews) - Foundation Polish
-- [ ] Add capability tags with monospace font on AgentCard
-- [ ] Test role badge colors for zen aesthetic
-- [ ] Add smooth transition for menu reveal (opacity/slide)
-- [ ] Verify icon display consistency (emoji vs URL)
-- [ ] Consider max-width for grid container (large screens)
-- [ ] Add subtle grid background pattern (optional)
-- [ ] Improve empty state design (agents/crews)
-- [ ] Add loading skeleton cards for agents/crews
-- [ ] Create professional CrewCard component
-- [ ] Show agent composition visually (badges/avatars)
-- [ ] Display workflow type clearly
-- [ ] Add workflow visualization (arrow/flow)
-- [ ] Better status indicators for crew runs
-- [ ] CrewCard hover animations consistent with AgentCard
-- [ ] Refactor crew list to grid view + spacing improvements
-- [ ] Improve crew empty state
-- [ ] Add crew loading skeletons
-- [ ] Refactor agent/crew creation modal styling
-- [ ] Better form field organization + help text/tooltips
-- [ ] Better button grouping + confirmation step
-- [ ] Consider wizard/step-based creation flow
-
-#### Phase 2: High Priority (Core Experience)
-- [ ] Improve chat message bubble styling + hierarchy
-- [ ] Refine markdown rendering appearance
-- [ ] Improve code block styling/syntax highlighting
-- [ ] Better loading states (typing indicator animations)
-- [ ] Better error message styling
-- [ ] Improve attachment display styling
-- [ ] Improve chat sidebar list styling
-- [ ] Improve search/filter UI for chat sidebar
-- [ ] Better new-chat button placement
-- [ ] Add loading states for conversation list
-- [ ] Improve selection indication for active chat
-- [ ] Floating toolbar: test responsiveness + improve mobile docking
-- [ ] Floating toolbar: accessibility/keyboard navigation
-- [ ] Floating toolbar: better visual feedback for selected agent/model
-- [ ] Settings: reorganize tabs and improve section separation
-- [ ] Settings: improve memory management styling
-- [ ] Settings: improve backup/restore UI
-- [ ] Settings: add more help text/descriptions
-- [ ] Settings: consistent spacing throughout
-- [ ] Home: better setup wizard reminder
-- [ ] Home: improved quick actions + stats/overview
-- [ ] Home: add shortcuts for common actions
-- [ ] Home: improve CTA buttons
-
-#### Phase 3: Medium Priority (Component Library & Details)
-- [ ] Button component audit (sizes, hover/focus, disabled)
-- [ ] Input/form components polish (focus, labels, errors, placeholder)
-- [ ] Badge component refinements (size, contrast, hierarchy)
-- [ ] Modal refinements (header/footer, close button, animations, mobile)
-- [ ] Card refinements (border/hover/shadow consistency)
-- [ ] Select refinements (dropdown styling, option highlight, keyboard nav)
-
-#### Phase 4: Low Priority (Polish & Accessibility)
-- [ ] Accessibility audit (ARIA, keyboard nav, contrast, SR testing)
-- [ ] Performance optimization (re-renders, CSS, images)
-- [ ] Micro-interactions & transitions polish
-- [ ] Theming & color consistency audit
-- [ ] Typography audit (sizes, weights, line-height)
-- [ ] Documentation (JSDoc, design system, usage guide)
+**Next Major Milestone: Sprint 3 - Backend Implementation**
+- Focus: Implement backends for all new MCP Tools Server features
+- Timeline: 10 weeks
+- Deliverables: MCP Tools Server, Workflow Engine, Memory System, Library API, Theme System
 
 ---
 
-## ✅ Consolidated Done (Jan 19, 2026)
-### From ZenTODO (Completed)
-- [x] AgentCard refactor (remove playful elements)
-- [x] Subtle hover animations + accent line
-- [x] Better icon container with hover effects
-- [x] Improved typography hierarchy + tracking-wide labels
-- [x] Agent grid spacing improvements (padding/gap)
-- [x] Three-dot menu for secondary actions
-- [x] Created ZenTODO roadmap
-
-### From TODO.md (Completed)
-- [x] See Completed sections above for foundational items already marked done.
+**Last Updated:** [Current Date - MCP Tools Server Architecture Upgrade]
