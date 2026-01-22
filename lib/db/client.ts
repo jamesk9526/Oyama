@@ -64,17 +64,23 @@ function ensureColumn(db: Database.Database, table: string, column: string, defi
 }
 
 function initializeTables(db: Database.Database): void {
-  // Agents table
+  // Agents table - simplified version, matching migration schema columns
   db.exec(`
     CREATE TABLE IF NOT EXISTS agents (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       role TEXT NOT NULL,
-      systemPrompt TEXT,
-      description TEXT,
-      capabilities TEXT,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL
+      system_prompt TEXT NOT NULL,
+      style_rules TEXT,
+      model TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      capabilities TEXT NOT NULL DEFAULT '[]',
+      color_tag TEXT,
+      icon TEXT,
+      workspace_id TEXT,
+      version INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     )
   `);
 
@@ -84,13 +90,13 @@ function initializeTables(db: Database.Database): void {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
-      content TEXT NOT NULL,
+      body TEXT NOT NULL,
       category TEXT,
       tags TEXT,
       variables TEXT,
-      isFavorite INTEGER DEFAULT 0,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL
+      is_favorite INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     )
   `);
 
@@ -100,11 +106,11 @@ function initializeTables(db: Database.Database): void {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
-      agentIds TEXT NOT NULL,
-      workflowType TEXT DEFAULT 'sequential',
+      agents TEXT NOT NULL,
+      workflow_type TEXT DEFAULT 'sequential',
       status TEXT DEFAULT 'idle',
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     )
   `);
 
@@ -113,26 +119,26 @@ function initializeTables(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS chats (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
-      agentId TEXT,
+      agent_id TEXT,
       model TEXT,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     )
   `);
 
   // Migrations for existing databases
-  ensureColumn(db, 'chats', 'agentId', 'TEXT');
+  ensureColumn(db, 'chats', 'agent_id', 'TEXT');
   ensureColumn(db, 'chats', 'model', 'TEXT');
 
   // Messages table (individual messages within chats)
   db.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id TEXT PRIMARY KEY,
-      chatId TEXT NOT NULL,
+      chat_id TEXT NOT NULL,
       role TEXT NOT NULL,
       content TEXT NOT NULL,
       timestamp TEXT NOT NULL,
-      FOREIGN KEY (chatId) REFERENCES chats(id) ON DELETE CASCADE
+      FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
     )
   `);
 
@@ -140,14 +146,14 @@ function initializeTables(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS memories (
       id TEXT PRIMARY KEY,
-      chatId TEXT,
+      chat_id TEXT,
       content TEXT NOT NULL,
       type TEXT DEFAULT 'fact',
       importance INTEGER DEFAULT 5,
       keywords TEXT,
-      createdAt TEXT NOT NULL,
-      lastAccessedAt TEXT,
-      accessCount INTEGER DEFAULT 0
+      created_at TEXT NOT NULL,
+      last_accessed_at TEXT,
+      access_count INTEGER DEFAULT 0
     )
   `);
 
@@ -163,13 +169,13 @@ function initializeTables(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS attachments (
       id TEXT PRIMARY KEY,
-      scopeType TEXT NOT NULL,
-      scopeId TEXT NOT NULL,
+      scope_type TEXT NOT NULL,
+      scope_id TEXT NOT NULL,
       name TEXT NOT NULL,
       path TEXT NOT NULL,
       mime TEXT,
       size INTEGER,
-      createdAt TEXT NOT NULL
+      created_at TEXT NOT NULL
     )
   `);
 
@@ -177,18 +183,18 @@ function initializeTables(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crew_runs (
       id TEXT PRIMARY KEY,
-      crewId TEXT NOT NULL,
-      crewName TEXT NOT NULL,
-      workflowType TEXT NOT NULL,
+      crew_id TEXT NOT NULL,
+      crew_name TEXT NOT NULL,
+      workflow_type TEXT NOT NULL,
       input TEXT NOT NULL,
       status TEXT NOT NULL,
       model TEXT NOT NULL,
       provider TEXT NOT NULL,
       temperature REAL,
-      topP REAL,
-      maxTokens INTEGER,
-      startedAt TEXT NOT NULL,
-      completedAt TEXT,
+      top_p REAL,
+      max_tokens INTEGER,
+      started_at TEXT NOT NULL,
+      completed_at TEXT,
       error TEXT
     )
   `);
@@ -197,16 +203,16 @@ function initializeTables(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crew_run_steps (
       id TEXT PRIMARY KEY,
-      runId TEXT NOT NULL,
-      stepIndex INTEGER NOT NULL,
-      agentId TEXT NOT NULL,
-      agentName TEXT NOT NULL,
+      run_id TEXT NOT NULL,
+      step_index INTEGER NOT NULL,
+      agent_id TEXT NOT NULL,
+      agent_name TEXT NOT NULL,
       input TEXT NOT NULL,
       output TEXT,
       success INTEGER NOT NULL,
       error TEXT,
       duration INTEGER NOT NULL,
-      createdAt TEXT NOT NULL
+      created_at TEXT NOT NULL
     )
   `);
 
