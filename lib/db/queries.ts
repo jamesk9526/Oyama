@@ -138,7 +138,8 @@ export interface CrewRecord {
 export const agentQueries = {
   getAll: () => {
     const db = getDatabase();
-    const rows = db.prepare('SELECT * FROM agents ORDER BY updatedAt DESC').all() as any[];
+    const orderByColumn = hasColumn('agents', 'updated_at') ? 'updated_at' : 'updatedAt';
+    const rows = db.prepare(`SELECT * FROM agents ORDER BY ${orderByColumn} DESC`).all() as any[];
     return rows.map(normalizeAgent) as Agent[];
   },
 
@@ -151,7 +152,7 @@ export const agentQueries = {
   create: (agent: Agent) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO agents (id, name, role, systemPrompt, styleRules, model, provider, capabilities, colorTag, icon, workspaceId, version, createdAt, updatedAt)
+      INSERT INTO agents (id, name, role, system_prompt, style_rules, model, provider, capabilities, color_tag, icon, workspace_id, version, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
@@ -181,7 +182,7 @@ export const agentQueries = {
     const updated = { ...agent, ...updates, updatedAt: new Date().toISOString() };
     const stmt = db.prepare(`
       UPDATE agents 
-      SET name = ?, role = ?, systemPrompt = ?, styleRules = ?, model = ?, provider = ?, capabilities = ?, colorTag = ?, icon = ?, workspaceId = ?, version = ?, updatedAt = ?
+      SET name = ?, role = ?, system_prompt = ?, style_rules = ?, model = ?, provider = ?, capabilities = ?, color_tag = ?, icon = ?, workspace_id = ?, version = ?, updated_at = ?
       WHERE id = ?
     `);
     stmt.run(
@@ -213,7 +214,8 @@ export const agentQueries = {
 export const templateQueries = {
   getAll: () => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM templates ORDER BY updatedAt DESC').all() as any[];
+    const orderByColumn = hasColumn('templates', 'updated_at') ? 'updated_at' : 'updatedAt';
+    return db.prepare(`SELECT * FROM templates ORDER BY ${orderByColumn} DESC`).all() as any[];
   },
 
   getById: (id: string) => {
@@ -224,7 +226,7 @@ export const templateQueries = {
   create: (template: Template) => {
     const db = getDatabase();
     const stmt = db.prepare(`
-      INSERT INTO templates (id, name, description, content, category, tags, variables, isFavorite, createdAt, updatedAt)
+      INSERT INTO templates (id, name, description, body, category, tags, variables, is_favorite, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
@@ -250,7 +252,7 @@ export const templateQueries = {
     const updated = { ...template, ...updates, updatedAt: new Date().toISOString() };
     const stmt = db.prepare(`
       UPDATE templates 
-      SET name = ?, description = ?, content = ?, category = ?, tags = ?, variables = ?, isFavorite = ?, updatedAt = ?
+      SET name = ?, description = ?, body = ?, category = ?, tags = ?, variables = ?, is_favorite = ?, updated_at = ?
       WHERE id = ?
     `);
     stmt.run(
