@@ -53,18 +53,18 @@ export class ApprovalGateManager {
     // Return a promise that resolves when approval is given
     return new Promise((resolve, reject) => {
       // Set timeout if specified
-      let timeoutId: NodeJS.Timeout | undefined;
+      let timeoutId: number | undefined;
       if (request.timeout) {
         timeoutId = setTimeout(() => {
           this.pendingApprovals.delete(gateId);
           this.approvalCallbacks.delete(gateId);
           reject(new Error('Approval timeout'));
-        }, request.timeout);
+        }, request.timeout) as unknown as number;
       }
 
       // Store callback
       this.approvalCallbacks.set(gateId, (decision: ApprovalDecision) => {
-        if (timeoutId) clearTimeout(timeoutId);
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
         
         gate.status = decision.approved ? 'approved' : 'rejected';
         gate.resolvedAt = new Date();

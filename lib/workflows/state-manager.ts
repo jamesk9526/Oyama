@@ -175,7 +175,7 @@ export class WorkflowStateManager {
     if (!state) return;
 
     const snapshot: WorkflowSnapshot = {
-      state: JSON.parse(JSON.stringify(state)), // Deep clone
+      state: structuredClone(state), // Deep clone
       timestamp: new Date(),
     };
 
@@ -209,7 +209,7 @@ export class WorkflowStateManager {
     }
 
     const snapshot = snapshots[snapshotIndex];
-    const restoredState = JSON.parse(JSON.stringify(snapshot.state));
+    const restoredState = structuredClone(snapshot.state);
     
     this.states.set(workflowId, restoredState);
     

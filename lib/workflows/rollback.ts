@@ -268,12 +268,9 @@ export class WorkflowRollbackManager {
     const state = workflowStateManager.getState(workflowId);
     if (!state) return;
 
-    const newContext = { ...state.context };
-    Object.keys(newContext).forEach(key => {
-      if (key.startsWith('retry_count_')) {
-        delete newContext[key];
-      }
-    });
+    const newContext = Object.fromEntries(
+      Object.entries(state.context).filter(([key]) => !key.startsWith('retry_count_'))
+    );
 
     workflowStateManager.updateContext(workflowId, newContext);
   }
