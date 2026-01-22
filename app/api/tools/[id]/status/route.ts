@@ -1,6 +1,13 @@
 // API route for updating tool status
 import { NextRequest, NextResponse } from 'next/server';
-import { toolRegistry } from '@/lib/mcp';
+import { toolRegistry, initializeBuiltInTools } from '@/lib/mcp';
+
+// Ensure built-in tools are registered for this route module
+let initialized = false;
+if (!initialized) {
+  initializeBuiltInTools();
+  initialized = true;
+}
 
 /**
  * PATCH /api/tools/[id]/status - Update tool status
@@ -10,6 +17,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    initializeBuiltInTools();
     const body = await request.json();
     const { enabled } = body;
     

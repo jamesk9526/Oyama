@@ -31,6 +31,48 @@ const hasTable = (table: string): boolean => {
   return exists;
 };
 
+const resolveOrderByColumn = (table: string, camel: string, snake: string): string => {
+  if (hasColumn(table, camel)) return camel;
+  if (hasColumn(table, snake)) return snake;
+  return camel;
+};
+
+const addColumnPair = (
+  table: string,
+  columns: string[],
+  values: unknown[],
+  camel: string,
+  snake: string,
+  value: unknown
+) => {
+  if (hasColumn(table, camel)) {
+    columns.push(camel);
+    values.push(value);
+  }
+  if (snake !== camel && hasColumn(table, snake)) {
+    columns.push(snake);
+    values.push(value);
+  }
+};
+
+const addUpdatePair = (
+  table: string,
+  setClauses: string[],
+  values: unknown[],
+  camel: string,
+  snake: string,
+  value: unknown
+) => {
+  if (hasColumn(table, camel)) {
+    setClauses.push(`${camel} = ?`);
+    values.push(value);
+  }
+  if (snake !== camel && hasColumn(table, snake)) {
+    setClauses.push(`${snake} = ?`);
+    values.push(value);
+  }
+};
+
 const parseJsonArray = (value: unknown): string[] => {
   if (Array.isArray(value)) return value.filter((item) => typeof item === 'string') as string[];
   if (typeof value === 'string') {
@@ -138,7 +180,8 @@ export interface CrewRecord {
 export const agentQueries = {
   getAll: () => {
     const db = getDatabase();
-    const rows = db.prepare('SELECT * FROM agents ORDER BY updatedAt DESC').all() as any[];
+    const orderByColumn = resolveOrderByColumn('agents', 'updatedAt', 'updated_at');
+    const rows = db.prepare(`SELECT * FROM agents ORDER BY ${orderByColumn} DESC`).all() as any[];
     return rows.map(normalizeAgent) as Agent[];
   },
 
@@ -150,26 +193,24 @@ export const agentQueries = {
 
   create: (agent: Agent) => {
     const db = getDatabase();
-    const stmt = db.prepare(`
-      INSERT INTO agents (id, name, role, systemPrompt, styleRules, model, provider, capabilities, colorTag, icon, workspaceId, version, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
-      agent.id,
-      agent.name,
-      agent.role,
-      agent.systemPrompt,
-      agent.styleRules || null,
-      agent.model,
-      agent.provider,
-      JSON.stringify(agent.capabilities || []),
-      agent.colorTag || null,
-      agent.icon || null,
-      agent.workspaceId,
-      agent.version,
-      agent.createdAt,
-      agent.updatedAt
-    );
+    const columns = ['id', 'name', 'role'];
+    const values: unknown[] = [agent.id, agent.name, agent.role];
+
+    addColumnPair('agents', columns, values, 'systemPrompt', 'system_prompt', agent.systemPrompt);
+    addColumnPair('agents', columns, values, 'styleRules', 'style_rules', agent.styleRules || null);
+    addColumnPair('agents', columns, values, 'model', 'model', agent.model);
+    addColumnPair('agents', columns, values, 'provider', 'provider', agent.provider);
+    addColumnPair('agents', columns, values, 'capabilities', 'capabilities', JSON.stringify(agent.capabilities || []));
+    addColumnPair('agents', columns, values, 'colorTag', 'color_tag', agent.colorTag || null);
+    addColumnPair('agents', columns, values, 'icon', 'icon', agent.icon || null);
+    addColumnPair('agents', columns, values, 'workspaceId', 'workspace_id', agent.workspaceId || null);
+    addColumnPair('agents', columns, values, 'version', 'version', agent.version || 1);
+    addColumnPair('agents', columns, values, 'description', 'description', agent.bio || null);
+    addColumnPair('agents', columns, values, 'createdAt', 'created_at', agent.createdAt);
+    addColumnPair('agents', columns, values, 'updatedAt', 'updated_at', agent.updatedAt);
+
+    const placeholders = columns.map(() => '?').join(', ');
+    db.prepare(`INSERT INTO agents (${columns.join(', ')}) VALUES (${placeholders})`).run(...values);
     return agent;
   },
 
@@ -179,26 +220,22 @@ export const agentQueries = {
     if (!agent) return null;
 
     const updated = { ...agent, ...updates, updatedAt: new Date().toISOString() };
-    const stmt = db.prepare(`
-      UPDATE agents 
-      SET name = ?, role = ?, systemPrompt = ?, styleRules = ?, model = ?, provider = ?, capabilities = ?, colorTag = ?, icon = ?, workspaceId = ?, version = ?, updatedAt = ?
-      WHERE id = ?
-    `);
-    stmt.run(
-      updated.name,
-      updated.role,
-      updated.systemPrompt,
-      updated.styleRules || null,
-      updated.model,
-      updated.provider,
-      JSON.stringify(updated.capabilities || []),
-      updated.colorTag || null,
-      updated.icon || null,
-      updated.workspaceId,
-      updated.version,
-      updated.updatedAt,
-      id
-    );
+    const setClauses: string[] = ['name = ?', 'role = ?'];
+    const values: unknown[] = [updated.name, updated.role];
+
+    addUpdatePair('agents', setClauses, values, 'systemPrompt', 'system_prompt', updated.systemPrompt);
+    addUpdatePair('agents', setClauses, values, 'styleRules', 'style_rules', updated.styleRules || null);
+    addUpdatePair('agents', setClauses, values, 'model', 'model', updated.model);
+    addUpdatePair('agents', setClauses, values, 'provider', 'provider', updated.provider);
+    addUpdatePair('agents', setClauses, values, 'capabilities', 'capabilities', JSON.stringify(updated.capabilities || []));
+    addUpdatePair('agents', setClauses, values, 'colorTag', 'color_tag', updated.colorTag || null);
+    addUpdatePair('agents', setClauses, values, 'icon', 'icon', updated.icon || null);
+    addUpdatePair('agents', setClauses, values, 'workspaceId', 'workspace_id', updated.workspaceId || null);
+    addUpdatePair('agents', setClauses, values, 'version', 'version', updated.version || 1);
+    addUpdatePair('agents', setClauses, values, 'description', 'description', updated.bio || null);
+    addUpdatePair('agents', setClauses, values, 'updatedAt', 'updated_at', updated.updatedAt);
+
+    db.prepare(`UPDATE agents SET ${setClauses.join(', ')} WHERE id = ?`).run(...values, id);
     return updated;
   },
 
@@ -213,7 +250,8 @@ export const agentQueries = {
 export const templateQueries = {
   getAll: () => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM templates ORDER BY updatedAt DESC').all() as any[];
+    const orderByColumn = resolveOrderByColumn('templates', 'updatedAt', 'updated_at');
+    return db.prepare(`SELECT * FROM templates ORDER BY ${orderByColumn} DESC`).all() as any[];
   },
 
   getById: (id: string) => {
@@ -223,22 +261,24 @@ export const templateQueries = {
 
   create: (template: Template) => {
     const db = getDatabase();
-    const stmt = db.prepare(`
-      INSERT INTO templates (id, name, description, content, category, tags, variables, isFavorite, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
-      template.id,
-      template.name,
-      template.description,
-      template.body,
-      template.category,
-      JSON.stringify(template.tags || []),
-      JSON.stringify(template.variables || {}),
-      template.isFavorite ? 1 : 0,
-      template.createdAt,
-      template.updatedAt
-    );
+    const columns = ['id', 'name'];
+    const values: unknown[] = [template.id, template.name];
+
+    addColumnPair('templates', columns, values, 'description', 'description', template.description || null);
+    addColumnPair('templates', columns, values, 'content', 'body', template.body);
+    addColumnPair('templates', columns, values, 'category', 'category', template.category || null);
+    addColumnPair('templates', columns, values, 'tags', 'tags', JSON.stringify(template.tags || []));
+    addColumnPair('templates', columns, values, 'variables', 'variables', JSON.stringify(template.variables || []));
+    addColumnPair('templates', columns, values, 'systemAdditions', 'system_additions', template.systemAdditions || null);
+    addColumnPair('templates', columns, values, 'examples', 'examples', JSON.stringify(template.examples || []));
+    addColumnPair('templates', columns, values, 'outputSchema', 'output_schema', template.outputSchema || null);
+    addColumnPair('templates', columns, values, 'workspaceId', 'workspace_id', template.workspaceId || null);
+    addColumnPair('templates', columns, values, 'isFavorite', 'is_favorite', template.isFavorite ? 1 : 0);
+    addColumnPair('templates', columns, values, 'createdAt', 'created_at', template.createdAt);
+    addColumnPair('templates', columns, values, 'updatedAt', 'updated_at', template.updatedAt);
+
+    const placeholders = columns.map(() => '?').join(', ');
+    db.prepare(`INSERT INTO templates (${columns.join(', ')}) VALUES (${placeholders})`).run(...values);
     return template;
   },
 
@@ -248,22 +288,22 @@ export const templateQueries = {
     if (!template) return null;
 
     const updated = { ...template, ...updates, updatedAt: new Date().toISOString() };
-    const stmt = db.prepare(`
-      UPDATE templates 
-      SET name = ?, description = ?, content = ?, category = ?, tags = ?, variables = ?, isFavorite = ?, updatedAt = ?
-      WHERE id = ?
-    `);
-    stmt.run(
-      updated.name,
-      updated.description,
-      updated.body,
-      updated.category,
-      JSON.stringify(updated.tags || []),
-      JSON.stringify(updated.variables || {}),
-      updated.isFavorite ? 1 : 0,
-      updated.updatedAt,
-      id
-    );
+    const setClauses: string[] = ['name = ?'];
+    const values: unknown[] = [updated.name];
+
+    addUpdatePair('templates', setClauses, values, 'description', 'description', updated.description || null);
+    addUpdatePair('templates', setClauses, values, 'content', 'body', updated.body);
+    addUpdatePair('templates', setClauses, values, 'category', 'category', updated.category || null);
+    addUpdatePair('templates', setClauses, values, 'tags', 'tags', JSON.stringify(updated.tags || []));
+    addUpdatePair('templates', setClauses, values, 'variables', 'variables', JSON.stringify(updated.variables || []));
+    addUpdatePair('templates', setClauses, values, 'systemAdditions', 'system_additions', updated.systemAdditions || null);
+    addUpdatePair('templates', setClauses, values, 'examples', 'examples', JSON.stringify(updated.examples || []));
+    addUpdatePair('templates', setClauses, values, 'outputSchema', 'output_schema', updated.outputSchema || null);
+    addUpdatePair('templates', setClauses, values, 'workspaceId', 'workspace_id', updated.workspaceId || null);
+    addUpdatePair('templates', setClauses, values, 'isFavorite', 'is_favorite', updated.isFavorite ? 1 : 0);
+    addUpdatePair('templates', setClauses, values, 'updatedAt', 'updated_at', updated.updatedAt);
+
+    db.prepare(`UPDATE templates SET ${setClauses.join(', ')} WHERE id = ?`).run(...values, id);
     return updated;
   },
 

@@ -97,10 +97,26 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
+      let isClosed = false;
       const encoder = new TextEncoder();
       const send = (event: string, data: any) => {
-        controller.enqueue(encoder.encode(`event: ${event}\n`));
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        if (isClosed) return;
+        try {
+          controller.enqueue(encoder.encode(`event: ${event}\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          isClosed = true;
+        }
+      };
+
+      const safeClose = () => {
+        if (isClosed) return;
+        isClosed = true;
+        try {
+          controller.close();
+        } catch {
+          // ignore double-close
+        }
       };
 
       send('run', { runId, status: 'running', startedAt, crewId, crewName, workflowType: workflow.type });
@@ -142,7 +158,7 @@ export async function POST(request: NextRequest) {
             totalDuration: result.totalDuration,
             error: result.error,
           });
-          controller.close();
+          safeClose();
         })
         .catch((error) => {
           crewRunQueries.updateRun(runId, {
@@ -154,8 +170,11 @@ export async function POST(request: NextRequest) {
             runId,
             error: error instanceof Error ? error.message : 'Unknown error',
           });
-          controller.close();
+          safeClose();
         });
+    },
+    cancel() {
+      // client disconnected
     },
   });
 

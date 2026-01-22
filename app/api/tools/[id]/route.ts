@@ -1,6 +1,13 @@
 // API route for individual tool operations
 import { NextRequest, NextResponse } from 'next/server';
-import { toolRegistry } from '@/lib/mcp';
+import { toolRegistry, initializeBuiltInTools } from '@/lib/mcp';
+
+// Ensure built-in tools are registered for this route module
+let initialized = false;
+if (!initialized) {
+  initializeBuiltInTools();
+  initialized = true;
+}
 
 /**
  * GET /api/tools/[id] - Get a specific tool
@@ -10,6 +17,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    initializeBuiltInTools();
     const tool = toolRegistry.get(params.id);
     
     if (!tool) {
@@ -37,6 +45,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    initializeBuiltInTools();
     const success = toolRegistry.unregister(params.id);
     
     if (!success) {

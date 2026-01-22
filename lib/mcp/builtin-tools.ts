@@ -220,6 +220,145 @@ const textAnalysisHandler: ToolHandler = async (inputs) => {
 };
 
 /**
+ * UUID tool - Generates UUID v4 values
+ */
+const uuidTool: ToolDefinition = {
+  id: 'tool-uuid',
+  name: 'uuid',
+  description: 'Generates UUID v4 values',
+  category: 'system' as ToolCategory,
+  version: '1.0.0',
+  enabled: true,
+  openSource: true,
+  permissions: [],
+  inputSchema: {
+    type: 'object',
+    properties: {
+      count: {
+        type: 'number',
+        description: 'How many UUIDs to generate (1-50)',
+        default: 1,
+      },
+    },
+  },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      uuids: {
+        type: 'array',
+        description: 'Generated UUID values',
+      },
+    },
+  },
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+const uuidHandler: ToolHandler = async (inputs) => {
+  const count = Math.min(Math.max(Number(inputs.count) || 1, 1), 50);
+  const uuids = Array.from({ length: count }, () => crypto.randomUUID());
+  return { uuids };
+};
+
+/**
+ * Base64 tool - Encode/decode strings
+ */
+const base64Tool: ToolDefinition = {
+  id: 'tool-base64',
+  name: 'base64',
+  description: 'Encodes or decodes strings as Base64',
+  category: 'data' as ToolCategory,
+  version: '1.0.0',
+  enabled: true,
+  openSource: true,
+  permissions: [],
+  inputSchema: {
+    type: 'object',
+    properties: {
+      mode: {
+        type: 'string',
+        description: 'encode or decode',
+        enum: ['encode', 'decode'],
+      },
+      text: {
+        type: 'string',
+        description: 'Input text',
+      },
+    },
+    required: ['mode', 'text'],
+  },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      result: {
+        type: 'string',
+        description: 'Encoded or decoded output',
+      },
+    },
+  },
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+const base64Handler: ToolHandler = async (inputs) => {
+  const mode = inputs.mode as string;
+  const text = inputs.text as string;
+  if (mode === 'encode') {
+    return { result: Buffer.from(text, 'utf-8').toString('base64') };
+  }
+  return { result: Buffer.from(text, 'base64').toString('utf-8') };
+};
+
+/**
+ * JSON tool - Validate and pretty-print JSON
+ */
+const jsonTool: ToolDefinition = {
+  id: 'tool-json',
+  name: 'json',
+  description: 'Validates JSON and returns pretty-printed output',
+  category: 'data' as ToolCategory,
+  version: '1.0.0',
+  enabled: true,
+  openSource: true,
+  permissions: [],
+  inputSchema: {
+    type: 'object',
+    properties: {
+      text: {
+        type: 'string',
+        description: 'JSON string to validate/pretty-print',
+      },
+      indent: {
+        type: 'number',
+        description: 'Indent size (2-8)',
+        default: 2,
+      },
+    },
+    required: ['text'],
+  },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      valid: { type: 'boolean' },
+      pretty: { type: 'string' },
+      error: { type: 'string' },
+    },
+  },
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
+const jsonHandler: ToolHandler = async (inputs) => {
+  const indent = Math.min(Math.max(Number(inputs.indent) || 2, 2), 8);
+  try {
+    const parsed = JSON.parse(inputs.text as string);
+    return { valid: true, pretty: JSON.stringify(parsed, null, indent) };
+  } catch (error: any) {
+    return { valid: false, pretty: '', error: error?.message || 'Invalid JSON' };
+  }
+};
+
+/**
  * Initialize built-in tools
  */
 export function initializeBuiltInTools(): void {
@@ -232,6 +371,9 @@ export function initializeBuiltInTools(): void {
   toolRegistry.register(calculatorTool, calculatorHandler);
   toolRegistry.register(timestampTool, timestampHandler);
   toolRegistry.register(textAnalysisTool, textAnalysisHandler);
+  toolRegistry.register(uuidTool, uuidHandler);
+  toolRegistry.register(base64Tool, base64Handler);
+  toolRegistry.register(jsonTool, jsonHandler);
   
   toolsInitialized = true;
 }
@@ -245,5 +387,8 @@ export function getBuiltInTools(): ToolDefinition[] {
     calculatorTool,
     timestampTool,
     textAnalysisTool,
+    uuidTool,
+    base64Tool,
+    jsonTool,
   ];
 }
