@@ -1120,3 +1120,488 @@ export const toolLogsDb = {
     db.prepare('DELETE FROM tool_logs').run();
   },
 };
+
+// Workflow queries
+export interface WorkflowRecord {
+  id: string;
+  name: string;
+  description: string;
+  stages: Array<{
+    id: string;
+    name: string;
+    agentId: string;
+    status: string;
+    requiresApproval: boolean;
+  }>;
+  workflowType: 'sequential' | 'parallel' | 'conditional';
+  status: 'draft' | 'planning' | 'executing' | 'paused' | 'completed' | 'failed';
+  crewId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const workflowQueries = {
+  getAll: () => {
+    const db = getDatabase();
+    if (!hasTable('workflows')) return [];
+    
+    const rows = db.prepare('SELECT * FROM workflows ORDER BY updatedAt DESC').all() as any[];
+    return rows.map(row => ({
+      ...row,
+      stages: JSON.parse(row.stages || '[]'),
+    })) as WorkflowRecord[];
+  },
+
+  getById: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflows')) return undefined;
+    
+    const row = db.prepare('SELECT * FROM workflows WHERE id = ?').get(id) as any;
+    if (!row) return undefined;
+    
+    return {
+      ...row,
+      stages: JSON.parse(row.stages || '[]'),
+    } as WorkflowRecord;
+  },
+
+  create: (workflow: WorkflowRecord) => {
+    const db = getDatabase();
+    if (!hasTable('workflows')) return workflow;
+    
+    const stmt = db.prepare(`
+      INSERT INTO workflows (
+        id, name, description, stages, workflowType, status, crewId, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      workflow.id,
+      workflow.name,
+      workflow.description || '',
+      JSON.stringify(workflow.stages),
+      workflow.workflowType,
+      workflow.status,
+      workflow.crewId || null,
+      workflow.createdAt,
+      workflow.updatedAt
+    );
+    
+    return workflow;
+  },
+
+  update: (id: string, updates: Partial<WorkflowRecord>) => {
+    const db = getDatabase();
+    if (!hasTable('workflows')) return null;
+    
+    const workflow = workflowQueries.getById(id);
+    if (!workflow) return null;
+    
+    const updated = { ...workflow, ...updates, updatedAt: new Date().toISOString() };
+    
+    const stmt = db.prepare(`
+      UPDATE workflows 
+      SET name = ?, description = ?, stages = ?, workflowType = ?, status = ?, crewId = ?, updatedAt = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(
+      updated.name,
+      updated.description || '',
+      JSON.stringify(updated.stages),
+      updated.workflowType,
+      updated.status,
+      updated.crewId || null,
+      updated.updatedAt,
+      id
+    );
+    
+    return updated;
+  },
+
+  delete: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflows')) return;
+    
+    db.prepare('DELETE FROM workflows WHERE id = ?').run(id);
+  },
+
+  getByStatus: (status: WorkflowRecord['status']) => {
+    const db = getDatabase();
+    if (!hasTable('workflows')) return [];
+    
+    const rows = db.prepare('SELECT * FROM workflows WHERE status = ? ORDER BY updatedAt DESC').all(status) as any[];
+    return rows.map(row => ({
+      ...row,
+      stages: JSON.parse(row.stages || '[]'),
+    })) as WorkflowRecord[];
+  },
+};
+
+// Workflow state queries
+export interface WorkflowStateRecord {
+  id: string;
+  workflowId: string;
+  crewId: string;
+  crewName: string;
+  workflowDefinition: string;
+  status: 'pending' | 'running' | 'paused' | 'completed' | 'failed';
+  currentStepIndex: number;
+  steps: string;
+  startTime: string;
+  endTime?: string;
+  pausedAt?: string;
+  resumedAt?: string;
+  error?: string;
+  context: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const workflowStateQueries = {
+  getAll: (filters?: { status?: string; workflowId?: string }) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_states')) return [];
+    
+    let query = 'SELECT * FROM workflow_states WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.workflowId) {
+      query += ' AND workflowId = ?';
+      params.push(filters.workflowId);
+    }
+    
+    query += ' ORDER BY updatedAt DESC';
+    
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows as WorkflowStateRecord[];
+  },
+
+  getById: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_states')) return undefined;
+    
+    const row = db.prepare('SELECT * FROM workflow_states WHERE id = ?').get(id) as any;
+    return row as WorkflowStateRecord | undefined;
+  },
+
+  create: (state: WorkflowStateRecord) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_states')) return state;
+    
+    const stmt = db.prepare(`
+      INSERT INTO workflow_states (
+        id, workflowId, crewId, crewName, workflowDefinition, status, currentStepIndex,
+        steps, startTime, endTime, pausedAt, resumedAt, error, context, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      state.id,
+      state.workflowId,
+      state.crewId,
+      state.crewName,
+      state.workflowDefinition,
+      state.status,
+      state.currentStepIndex,
+      state.steps,
+      state.startTime,
+      state.endTime || null,
+      state.pausedAt || null,
+      state.resumedAt || null,
+      state.error || null,
+      state.context,
+      state.createdAt,
+      state.updatedAt
+    );
+    
+    return state;
+  },
+
+  update: (id: string, updates: Partial<WorkflowStateRecord>) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_states')) return null;
+    
+    const state = workflowStateQueries.getById(id);
+    if (!state) return null;
+    
+    const updated = { ...state, ...updates, updatedAt: new Date().toISOString() };
+    
+    const stmt = db.prepare(`
+      UPDATE workflow_states 
+      SET status = ?, currentStepIndex = ?, steps = ?, endTime = ?, 
+          pausedAt = ?, resumedAt = ?, error = ?, context = ?, updatedAt = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(
+      updated.status,
+      updated.currentStepIndex,
+      updated.steps,
+      updated.endTime || null,
+      updated.pausedAt || null,
+      updated.resumedAt || null,
+      updated.error || null,
+      updated.context,
+      updated.updatedAt,
+      id
+    );
+    
+    return updated;
+  },
+
+  delete: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_states')) return;
+    
+    db.prepare('DELETE FROM workflow_states WHERE id = ?').run(id);
+  },
+};
+
+// Workflow approval queries
+export interface WorkflowApprovalRecord {
+  id: string;
+  workflowId: string;
+  workflowStateId?: string;
+  stepIndex: number;
+  stepName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  comment?: string;
+  data?: string;
+}
+
+export const workflowApprovalQueries = {
+  getAll: (filters?: { status?: string; workflowId?: string }) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_approvals')) return [];
+    
+    let query = 'SELECT * FROM workflow_approvals WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.workflowId) {
+      query += ' AND workflowId = ?';
+      params.push(filters.workflowId);
+    }
+    
+    query += ' ORDER BY requestedAt DESC';
+    
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows as WorkflowApprovalRecord[];
+  },
+
+  getById: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_approvals')) return undefined;
+    
+    const row = db.prepare('SELECT * FROM workflow_approvals WHERE id = ?').get(id) as any;
+    return row as WorkflowApprovalRecord | undefined;
+  },
+
+  create: (approval: WorkflowApprovalRecord) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_approvals')) return approval;
+    
+    const stmt = db.prepare(`
+      INSERT INTO workflow_approvals (
+        id, workflowId, workflowStateId, stepIndex, stepName, status,
+        requestedAt, resolvedAt, resolvedBy, comment, data
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      approval.id,
+      approval.workflowId,
+      approval.workflowStateId || null,
+      approval.stepIndex,
+      approval.stepName,
+      approval.status,
+      approval.requestedAt,
+      approval.resolvedAt || null,
+      approval.resolvedBy || null,
+      approval.comment || null,
+      approval.data || null
+    );
+    
+    return approval;
+  },
+
+  update: (id: string, updates: Partial<WorkflowApprovalRecord>) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_approvals')) return null;
+    
+    const approval = workflowApprovalQueries.getById(id);
+    if (!approval) return null;
+    
+    const updated = { ...approval, ...updates };
+    
+    const stmt = db.prepare(`
+      UPDATE workflow_approvals 
+      SET status = ?, resolvedAt = ?, resolvedBy = ?, comment = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(
+      updated.status,
+      updated.resolvedAt || null,
+      updated.resolvedBy || null,
+      updated.comment || null,
+      id
+    );
+    
+    return updated;
+  },
+
+  delete: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_approvals')) return;
+    
+    db.prepare('DELETE FROM workflow_approvals WHERE id = ?').run(id);
+  },
+
+  getPending: (workflowId?: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_approvals')) return [];
+    
+    let query = "SELECT * FROM workflow_approvals WHERE status = 'pending'";
+    const params: any[] = [];
+    
+    if (workflowId) {
+      query += ' AND workflowId = ?';
+      params.push(workflowId);
+    }
+    
+    query += ' ORDER BY requestedAt ASC';
+    
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows as WorkflowApprovalRecord[];
+  },
+};
+
+// Workflow execution queries
+export interface WorkflowExecutionRecord {
+  id: string;
+  workflowId: string;
+  workflowStateId?: string;
+  crewId: string;
+  crewName: string;
+  workflowType: string;
+  initialInput: string;
+  status: 'running' | 'completed' | 'failed';
+  totalDuration?: number;
+  startTime: string;
+  endTime?: string;
+  error?: string;
+}
+
+export const workflowExecutionQueries = {
+  getAll: (filters?: { workflowId?: string; status?: string; limit?: number }) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_executions')) return [];
+    
+    let query = 'SELECT * FROM workflow_executions WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.workflowId) {
+      query += ' AND workflowId = ?';
+      params.push(filters.workflowId);
+    }
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    query += ' ORDER BY startTime DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows as WorkflowExecutionRecord[];
+  },
+
+  getById: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_executions')) return undefined;
+    
+    const row = db.prepare('SELECT * FROM workflow_executions WHERE id = ?').get(id) as any;
+    return row as WorkflowExecutionRecord | undefined;
+  },
+
+  create: (execution: WorkflowExecutionRecord) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_executions')) return execution;
+    
+    const stmt = db.prepare(`
+      INSERT INTO workflow_executions (
+        id, workflowId, workflowStateId, crewId, crewName, workflowType,
+        initialInput, status, totalDuration, startTime, endTime, error
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      execution.id,
+      execution.workflowId,
+      execution.workflowStateId || null,
+      execution.crewId,
+      execution.crewName,
+      execution.workflowType,
+      execution.initialInput,
+      execution.status,
+      execution.totalDuration || null,
+      execution.startTime,
+      execution.endTime || null,
+      execution.error || null
+    );
+    
+    return execution;
+  },
+
+  update: (id: string, updates: Partial<WorkflowExecutionRecord>) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_executions')) return null;
+    
+    const execution = workflowExecutionQueries.getById(id);
+    if (!execution) return null;
+    
+    const updated = { ...execution, ...updates };
+    
+    const stmt = db.prepare(`
+      UPDATE workflow_executions 
+      SET status = ?, totalDuration = ?, endTime = ?, error = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(
+      updated.status,
+      updated.totalDuration || null,
+      updated.endTime || null,
+      updated.error || null,
+      id
+    );
+    
+    return updated;
+  },
+
+  delete: (id: string) => {
+    const db = getDatabase();
+    if (!hasTable('workflow_executions')) return;
+    
+    db.prepare('DELETE FROM workflow_executions WHERE id = ?').run(id);
+  },
+};

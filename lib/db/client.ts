@@ -227,6 +227,116 @@ function initializeTables(db: Database.Database): void {
     )
   `);
 
+  // Workflows table (enhanced workflow definitions)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workflows (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      stages TEXT NOT NULL,
+      workflowType TEXT DEFAULT 'sequential',
+      status TEXT DEFAULT 'draft',
+      crewId TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (crewId) REFERENCES crews(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Workflow states table (active execution state)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workflow_states (
+      id TEXT PRIMARY KEY,
+      workflowId TEXT NOT NULL,
+      crewId TEXT NOT NULL,
+      crewName TEXT NOT NULL,
+      workflowDefinition TEXT NOT NULL,
+      status TEXT NOT NULL,
+      currentStepIndex INTEGER NOT NULL,
+      steps TEXT NOT NULL,
+      startTime TEXT NOT NULL,
+      endTime TEXT,
+      pausedAt TEXT,
+      resumedAt TEXT,
+      error TEXT,
+      context TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (workflowId) REFERENCES workflows(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Workflow approval gates table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workflow_approvals (
+      id TEXT PRIMARY KEY,
+      workflowId TEXT NOT NULL,
+      workflowStateId TEXT,
+      stepIndex INTEGER NOT NULL,
+      stepName TEXT NOT NULL,
+      status TEXT NOT NULL,
+      requestedAt TEXT NOT NULL,
+      resolvedAt TEXT,
+      resolvedBy TEXT,
+      comment TEXT,
+      data TEXT,
+      FOREIGN KEY (workflowId) REFERENCES workflows(id) ON DELETE CASCADE,
+      FOREIGN KEY (workflowStateId) REFERENCES workflow_states(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Workflow execution history table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workflow_executions (
+      id TEXT PRIMARY KEY,
+      workflowId TEXT NOT NULL,
+      workflowStateId TEXT,
+      crewId TEXT NOT NULL,
+      crewName TEXT NOT NULL,
+      workflowType TEXT NOT NULL,
+      initialInput TEXT NOT NULL,
+      status TEXT NOT NULL,
+      totalDuration INTEGER,
+      startTime TEXT NOT NULL,
+      endTime TEXT,
+      error TEXT,
+      FOREIGN KEY (workflowId) REFERENCES workflows(id) ON DELETE CASCADE,
+      FOREIGN KEY (workflowStateId) REFERENCES workflow_states(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Workflow execution steps table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workflow_execution_steps (
+      id TEXT PRIMARY KEY,
+      executionId TEXT NOT NULL,
+      stepIndex INTEGER NOT NULL,
+      agentId TEXT NOT NULL,
+      agentName TEXT NOT NULL,
+      input TEXT NOT NULL,
+      output TEXT,
+      success INTEGER NOT NULL,
+      error TEXT,
+      startTime TEXT NOT NULL,
+      endTime TEXT NOT NULL,
+      duration INTEGER NOT NULL,
+      FOREIGN KEY (executionId) REFERENCES workflow_executions(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create indexes for better query performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_workflow_states_status ON workflow_states(status);
+    CREATE INDEX IF NOT EXISTS idx_workflow_states_workflow_id ON workflow_states(workflowId);
+    CREATE INDEX IF NOT EXISTS idx_workflow_approvals_status ON workflow_approvals(status);
+    CREATE INDEX IF NOT EXISTS idx_workflow_approvals_workflow_id ON workflow_approvals(workflowId);
+    CREATE INDEX IF NOT EXISTS idx_workflow_executions_workflow_id ON workflow_executions(workflowId);
+    CREATE INDEX IF NOT EXISTS idx_workflow_executions_status ON workflow_executions(status);
+    CREATE INDEX IF NOT EXISTS idx_crew_runs_crew_id ON crew_runs(crewId);
+    CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chatId);
+    CREATE INDEX IF NOT EXISTS idx_memories_chat_id ON memories(chatId);
+  `);
+
   console.log('Database tables initialized successfully');
 }
 

@@ -1,6 +1,6 @@
 // API route for workflow CRUD operations
 import { NextRequest, NextResponse } from 'next/server';
-import { crewQueries } from '@/lib/db/queries';
+import { workflowQueries, type WorkflowRecord } from '@/lib/db/queries';
 import crypto from 'crypto';
 
 /**
@@ -8,26 +8,7 @@ import crypto from 'crypto';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Workflows are stored as crews in the database
-    const crews = crewQueries.getAll();
-    
-    // Transform crews to workflow format
-    const workflows = crews.map(crew => ({
-      id: crew.id,
-      name: crew.name,
-      description: crew.description,
-      status: crew.status || 'draft',
-      stages: crew.agents.map((agentId: string, index: number) => ({
-        id: `stage-${index}`,
-        name: `Stage ${index + 1}`,
-        agentId,
-        status: 'pending',
-        requiresApproval: false,
-      })),
-      workflowType: crew.workflowType,
-      createdAt: crew.createdAt,
-      updatedAt: crew.updatedAt,
-    }));
+    const workflows = workflowQueries.getAll();
     
     return NextResponse.json({ workflows, count: workflows.length });
   } catch (error: any) {
@@ -45,7 +26,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, stages, workflowType = 'sequential' } = body;
+    const { name, description, stages, workflowType = 'sequential', crewId } = body;
     
     if (!name || !stages || !Array.isArray(stages)) {
       return NextResponse.json(
@@ -54,40 +35,26 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Extract agent IDs from stages
-    const agents = stages.map((stage: { agentId: string }) => stage.agentId).filter(Boolean);
-    
-    // Create crew (which serves as a workflow)
-    const crew = {
+    // Create workflow
+    const workflow: WorkflowRecord = {
       id: crypto.randomUUID(),
       name,
       description: description || '',
-      agents,
-      workflowType,
-      status: 'idle' as const,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    crewQueries.create(crew);
-    
-    // Transform back to workflow format
-    const workflow = {
-      id: crew.id,
-      name: crew.name,
-      description: crew.description,
-      status: crew.status,
       stages: stages.map((stage: any, index: number) => ({
-        id: `stage-${index}`,
+        id: stage.id || `stage-${index}`,
         name: stage.name || `Stage ${index + 1}`,
         agentId: stage.agentId,
         status: 'pending',
         requiresApproval: stage.requiresApproval || false,
       })),
-      workflowType: crew.workflowType,
-      createdAt: crew.createdAt,
-      updatedAt: crew.updatedAt,
+      workflowType,
+      status: 'draft',
+      crewId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
+    
+    workflowQueries.create(workflow);
     
     return NextResponse.json({ workflow }, { status: 201 });
   } catch (error: any) {
