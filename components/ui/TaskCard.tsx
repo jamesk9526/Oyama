@@ -67,7 +67,7 @@ export function TaskCard({
 
   return (
     <div 
-      className={`task-card w-80 bg-surface border border-border/60 rounded-relaxed overflow-hidden hover-lift ${statusBorderClass} border-t-[3px]`}
+      className={`task-card bg-surface border border-border/60 rounded-relaxed overflow-hidden hover-lift ${statusBorderClass} border-t-[3px]`}
       role="article"
       aria-label={`Task: ${title}`}
     >

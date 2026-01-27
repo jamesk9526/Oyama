@@ -34,9 +34,12 @@ export function AgentStatusPanel({
   const [metrics, setMetrics] = useState<SystemMetrics>({ cpuUsage: 0, memoryUsage: 0 });
   const [selectedModel, setSelectedModel] = useState(currentModel);
 
-  // Simulate metrics updates (in production, would fetch from system API)
+  // TODO: Replace with actual system metrics API integration
+  // For production, implement: /api/system/metrics endpoint or use electron IPC
+  // to fetch real CPU/RAM usage from the host system
   useEffect(() => {
     const updateMetrics = () => {
+      // Simulated metrics for demonstration
       setMetrics({
         cpuUsage: Math.random() * 30 + (isActive ? 40 : 5),
         memoryUsage: Math.random() * 20 + 30,

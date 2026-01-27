@@ -239,8 +239,9 @@ export function ModelSelector({
             <button
               className="w-full flex items-center justify-center gap-2 py-2 text-sm text-primary hover:bg-primary/10 rounded-standard transition-colors"
               onClick={() => {
-                // Would open Ollama model browser or similar
-                console.log('Open model browser');
+                // TODO: Implement Ollama model browser integration
+                // This would navigate to /models page or open a modal
+                window.location.href = '/models';
               }}
             >
               <Download className="w-4 h-4" />
