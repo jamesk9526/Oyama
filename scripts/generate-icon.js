@@ -1,5 +1,4 @@
 const sharp = require('sharp');
-const pngToIco = require('png-to-ico');
 const path = require('path');
 const fs = require('fs');
 
@@ -15,6 +14,9 @@ if (!fs.existsSync(assetsDir)) {
 
 async function generateIcons() {
   try {
+    // Dynamically import the ES module
+    const pngToIco = await import('png-to-ico');
+    
     // Convert SVG to PNG (256x256 for Windows)
     const info = await sharp(svgPath)
       .resize(256, 256, {
