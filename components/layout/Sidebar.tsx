@@ -21,14 +21,17 @@ import {
   Library,
   Database,
   Cpu,
-  HelpCircle
+  HelpCircle,
+  Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useUIStore } from '@/lib/stores/ui';
 import { useEffect, useState } from 'react';
+import { AgentStatusPanel } from './AgentStatusPanel';
 
 const navigation = [
   { name: 'Chat', href: '/chats', icon: MessageSquare },
+  { name: 'Playground', href: '/playground', icon: Layers },
   { name: 'Agents', href: '/agents', icon: Users },
   { name: 'Crews', href: '/crews', icon: Sparkles },
   { name: 'Workflows', href: '/workflows', icon: GitBranch },
@@ -47,6 +50,7 @@ export const Sidebar = () => {
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [chatHistory, setChatHistory] = useState<Array<{ id: string; title: string; updatedAt: string }>>([]);
   const [historySearch, setHistorySearch] = useState('');
+  const [isAgentActive, setIsAgentActive] = useState(false);
 
   const handleNewChatClick = () => {
     if (pathname === '/chats') {
@@ -132,10 +136,18 @@ export const Sidebar = () => {
           <p className="text-xs text-muted-foreground mt-0.5">AI Agent Platform</p>
         </div>
 
+        {/* Agent Status Panel */}
+        <AgentStatusPanel 
+          agentName="AI Assistant"
+          currentModel="llama3.2"
+          isActive={isAgentActive}
+          onModelChange={(model) => console.log('Model changed:', model)}
+        />
+
         {/* New Chat Button */}
         <div className="p-3">
           <Button 
-            className="w-full" 
+            className="w-full focus-ring" 
             size="sm"
             onClick={handleNewChatClick}
           >
@@ -145,7 +157,7 @@ export const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto" role="navigation" aria-label="Main navigation">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -153,18 +165,19 @@ export const Sidebar = () => {
                 <Link
                   href={item.href}
                   className={clsx(
-                    'flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    'flex items-center px-3 py-2 rounded-standard text-sm font-medium transition-colors focus-ring',
                     {
                       'bg-accent/40 text-foreground': isActive,
                       'text-muted-foreground hover:bg-accent/40 hover:text-foreground': !isActive,
                     }
                   )}
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <item.icon className="w-4 h-4 mr-3" />
+                  <item.icon className="w-4 h-4 mr-3" aria-hidden="true" />
                   {item.name}
                 </Link>
-                {/* History submenu under Chats */}
-                {item.name === 'Chats' && (
+                {/* History submenu under Chat */}
+                {item.name === 'Chat' && (
                   <button
                     onClick={() => {
                       setShowChatHistory(!showChatHistory);

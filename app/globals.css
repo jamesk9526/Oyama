@@ -2,8 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Inter font (Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* JetBrains Mono for code (Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
-  /* Spacing Scale */
+  /* Spacing Scale - 4px base unit */
+  --spacing-1: 0.25rem;    /* 4px */
+  --spacing-2: 0.5rem;     /* 8px */
+  --spacing-3: 0.75rem;    /* 12px */
+  --spacing-4: 1rem;       /* 16px */
+  --spacing-6: 1.5rem;     /* 24px */
+  --spacing-8: 2rem;       /* 32px */
+  --spacing-12: 3rem;      /* 48px */
+  --spacing-16: 4rem;      /* 64px */
+  --spacing-24: 6rem;      /* 96px */
+  
+  /* Legacy spacing aliases */
   --spacing-xs: 0.25rem;   /* 4px */
   --spacing-sm: 0.5rem;    /* 8px */
   --spacing-md: 1rem;      /* 16px */
@@ -11,12 +27,26 @@
   --spacing-xl: 2rem;      /* 32px */
   --spacing-2xl: 3rem;     /* 48px */
   
-  /* Radius Scale */
+  /* Border Radius Scale */
+  --radius-tight: 0.25rem;    /* 4px */
+  --radius-standard: 0.5rem;  /* 8px */
+  --radius-relaxed: 0.75rem;  /* 12px */
+  --radius-prominent: 1rem;   /* 16px */
+  
+  /* Legacy radius aliases */
   --radius-sm: 0.25rem;    /* 4px */
   --radius-md: 0.5rem;     /* 8px */
   --radius-lg: 0.75rem;    /* 12px */
   
   /* Typography Scale */
+  --font-caption: 0.75rem;    /* 12px */
+  --font-body: 0.875rem;      /* 14px */
+  --font-emphasis: 1rem;      /* 16px */
+  --font-h3: 1.25rem;         /* 20px */
+  --font-h2: 1.5rem;          /* 24px */
+  --font-h1: 2rem;            /* 32px */
+  
+  /* Legacy font size aliases */
   --font-xs: 0.75rem;      /* 12px */
   --font-sm: 0.875rem;     /* 14px */
   --font-base: 1rem;       /* 16px */
@@ -25,33 +55,63 @@
   --font-2xl: 1.5rem;      /* 24px */
   --font-3xl: 1.875rem;    /* 30px */
   
-  /* Dark-first color system */
-  --background: 15 15 17;           /* #0f0f11 */
-  --foreground: 250 250 250;        /* #fafafa */
+  /* Dark Mode Color System (Production-Ready Design System) */
+  --background: 10 10 15;            /* #0A0A0F - Dark mode background */
+  --background-surface: 24 24 27;    /* #18181B - Dark mode surfaces */
+  --foreground: 248 250 252;         /* #F8FAFC - Slate 50 */
   
-  --primary: 99 102 241;            /* indigo-500 */
-  --primary-foreground: 250 250 250;
+  /* Primary: Indigo 500 - Agent actions, CTAs */
+  --primary: 99 102 241;             /* #6366F1 */
+  --primary-foreground: 248 250 252;
   
-  --secondary: 30 30 34;            /* #1e1e22 */
-  --secondary-foreground: 250 250 250;
+  /* Secondary: Violet 500 - User inputs, highlights */
+  --secondary: 139 92 246;           /* #8B5CF6 */
+  --secondary-foreground: 248 250 252;
   
-  --accent: 139 92 246;             /* violet-500 */
-  --accent-foreground: 250 250 250;
+  /* Surface colors */
+  --surface: 30 30 38;               /* #1E1E26 - Dark mode surface */
+  --surface-foreground: 248 250 252;
   
-  --muted: 39 39 42;                /* zinc-800 */
-  --muted-foreground: 161 161 170;  /* zinc-400 */
+  /* Accent: Violet 500 */
+  --accent: 139 92 246;              /* #8B5CF6 */
+  --accent-foreground: 248 250 252;
   
-  --border: 39 39 42;               /* zinc-800 */
+  /* Muted colors */
+  --muted: 39 39 42;                 /* zinc-800 */
+  --muted-foreground: 161 161 170;   /* zinc-400 */
+  
+  /* Status Colors */
+  --success: 16 185 129;             /* #10B981 - Emerald 500 - Completed tasks */
+  --success-foreground: 248 250 252;
+  --warning: 245 158 11;             /* #F59E0B - Amber 500 - In-progress states */
+  --warning-foreground: 15 23 42;    /* Slate 900 */
+  --error: 239 68 68;                /* #EF4444 - Red 500 - Failures, alerts */
+  --error-foreground: 248 250 252;
+  
+  /* Border and input */
+  --border: 45 45 53;                /* #2D2D35 */
   --input: 39 39 42;
   --ring: 99 102 241;
   
-  --destructive: 239 68 68;         /* red-500 */
-  --destructive-foreground: 250 250 250;
+  /* Legacy destructive alias */
+  --destructive: 239 68 68;          /* red-500 */
+  --destructive-foreground: 248 250 252;
   
   /* Shadows (soft, subtle) */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  /* Animation durations */
+  --duration-fast: 0.15s;
+  --duration-normal: 0.2s;
+  --duration-slow: 0.3s;
+  
+  /* Sidebar dimensions */
+  --sidebar-width: 240px;
+  --context-panel-width: 280px;
+  --topbar-height: 56px;
 }
 
 * {
@@ -64,7 +124,7 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -76,8 +136,14 @@ body {
   background: rgb(var(--background));
 }
 
-code {
-  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+/* Typography classes */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 /* Scrollbar styling (minimal) */
@@ -122,6 +188,121 @@ code {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  
+  /* Micro-interactions */
+  .hover-scale {
+    transition: transform var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+  
+  .hover-lift {
+    transition: transform var(--duration-normal) ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Focus indicators for accessibility */
+  .focus-ring {
+    outline: none;
+  }
+  
+  .focus-ring:focus-visible {
+    outline: 2px solid rgb(var(--primary));
+    outline-offset: 4px;
+  }
+  
+  /* Glass morphism effect */
+  .glass {
+    background: rgba(var(--background-surface), 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  /* Status colors */
+  .status-success {
+    color: rgb(var(--success));
+  }
+  
+  .status-warning {
+    color: rgb(var(--warning));
+  }
+  
+  .status-error {
+    color: rgb(var(--error));
+  }
+  
+  .bg-success {
+    background-color: rgb(var(--success));
+  }
+  
+  .bg-warning {
+    background-color: rgb(var(--warning));
+  }
+  
+  .bg-error {
+    background-color: rgb(var(--error));
+  }
+  
+  /* Status border indicators */
+  .border-status-running {
+    border-top: 3px solid rgb(var(--primary));
+  }
+  
+  .border-status-done {
+    border-top: 3px solid rgb(var(--success));
+  }
+  
+  .border-status-error {
+    border-top: 3px solid rgb(var(--error));
+  }
+  
+  /* Task card styles */
+  .task-card {
+    width: 320px;
+    box-shadow: var(--shadow-card);
+    transition: transform var(--duration-normal) ease, box-shadow var(--duration-normal) ease;
+  }
+  
+  .task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Skip link for accessibility */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  
+  .skip-link:focus {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    padding: 1rem;
+    background: rgb(var(--primary));
+    color: rgb(var(--primary-foreground));
+    z-index: 9999;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 

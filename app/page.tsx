@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, Sparkles, Zap } from 'lucide-react';
+import { MessageSquare, Sparkles, Zap, Users, GitBranch, Server, Cpu, Shield, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 
@@ -9,30 +9,35 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
-      <div className="text-center max-w-2xl w-full">
-        <div className="mb-6 flex justify-center">
-          <div className="p-4 rounded-full bg-primary/10">
-            <Sparkles className="w-8 h-8 sm:w-12 sm:h-12 text-primary" />
+      <div className="text-center max-w-3xl w-full">
+        {/* Hero Section */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative">
+            <div className="p-5 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 zen-breathe">
+              <Sparkles className="w-10 h-10 sm:w-14 sm:h-14 text-primary" />
+            </div>
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-background animate-pulse" />
           </div>
         </div>
         
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-          Welcome to Oyama
+        <h1 className="text-h1 font-bold mb-4 tracking-tight">
+          Welcome to <span className="text-primary">Oyama</span>
         </h1>
         
-        <p className="text-base sm:text-lg text-muted-foreground mb-8 px-4">
-          Your AI Agent Collaboration Platform. Build, customize, and orchestrate 
-          AI agents with multi-agent workflows, advanced prompt engineering, and a 
-          modern interface.
+        <p className="text-emphasis text-muted-foreground mb-8 px-4 max-w-xl mx-auto leading-relaxed">
+          A next-generation AI automation studio with multi-agent orchestration, 
+          autonomous task execution, and sophisticated workflow automation—all running locally 
+          for privacy and performance.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 mb-12">
           <Button 
             size="lg" 
             className="w-full sm:w-auto"
             onClick={() => router.push('/playground')}
           >
-            <MessageSquare className="w-5 h-5 mr-2" />
+            <MessageSquare className="w-5 h-5 mr-2" aria-hidden="true" />
             Open Agent Playground
           </Button>
           <Button 
@@ -45,50 +50,94 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className="mt-8 sm:mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left">
-          <div className="p-4 rounded-lg bg-secondary border border-border">
-            <h3 className="font-semibold mb-2">Agent Playground</h3>
-            <p className="text-sm text-muted-foreground">
-              Run multi-agent workflows with a system-level synthesizer for polished output
+        {/* Feature Cards - New Design */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 text-left mb-12">
+          <div className="p-5 rounded-relaxed bg-surface border border-border/60 hover-lift transition-all group">
+            <div className="w-10 h-10 rounded-standard bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+              <Users className="w-5 h-5 text-primary" aria-hidden="true" />
+            </div>
+            <h3 className="font-semibold mb-2">Multi-Agent Crews</h3>
+            <p className="text-body text-muted-foreground">
+              Orchestrate specialized AI agents working together on complex tasks with automatic coordination.
             </p>
           </div>
-          <div className="p-4 rounded-lg bg-secondary border border-border">
-            <h3 className="font-semibold mb-2">Template Library</h3>
-            <p className="text-sm text-muted-foreground">
-              Reusable prompt templates with variables and live preview
+          <div className="p-5 rounded-relaxed bg-surface border border-border/60 hover-lift transition-all group">
+            <div className="w-10 h-10 rounded-standard bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors">
+              <GitBranch className="w-5 h-5 text-accent" aria-hidden="true" />
+            </div>
+            <h3 className="font-semibold mb-2">Staged Workflows</h3>
+            <p className="text-body text-muted-foreground">
+              Build automation pipelines with approval gates, conditional execution, and visual monitoring.
             </p>
           </div>
-          <div className="p-4 rounded-lg bg-secondary border border-border">
-            <h3 className="font-semibold mb-2">Local-First</h3>
-            <p className="text-sm text-muted-foreground">
-              SQLite database with full export/import capabilities
+          <div className="p-5 rounded-relaxed bg-surface border border-border/60 hover-lift transition-all group">
+            <div className="w-10 h-10 rounded-standard bg-success/10 flex items-center justify-center mb-3 group-hover:bg-success/20 transition-colors">
+              <Server className="w-5 h-5 text-success" aria-hidden="true" />
+            </div>
+            <h3 className="font-semibold mb-2">MCP Tools Server</h3>
+            <p className="text-body text-muted-foreground">
+              Local, embedded tool orchestration with file system access, code execution, and API connectors.
+            </p>
+          </div>
+          <div className="p-5 rounded-relaxed bg-surface border border-border/60 hover-lift transition-all group">
+            <div className="w-10 h-10 rounded-standard bg-warning/10 flex items-center justify-center mb-3 group-hover:bg-warning/20 transition-colors">
+              <Cpu className="w-5 h-5 text-warning" aria-hidden="true" />
+            </div>
+            <h3 className="font-semibold mb-2">Ollama Integration</h3>
+            <p className="text-body text-muted-foreground">
+              Connect to local or LAN Ollama instances with model hot-swapping and streaming responses.
+            </p>
+          </div>
+          <div className="p-5 rounded-relaxed bg-surface border border-border/60 hover-lift transition-all group">
+            <div className="w-10 h-10 rounded-standard bg-error/10 flex items-center justify-center mb-3 group-hover:bg-error/20 transition-colors">
+              <Shield className="w-5 h-5 text-error" aria-hidden="true" />
+            </div>
+            <h3 className="font-semibold mb-2">Local-First Privacy</h3>
+            <p className="text-body text-muted-foreground">
+              All data stored locally with SQLite. Full export/import capabilities and no cloud dependencies.
+            </p>
+          </div>
+          <div className="p-5 rounded-relaxed bg-surface border border-border/60 hover-lift transition-all group">
+            <div className="w-10 h-10 rounded-standard bg-secondary/30 flex items-center justify-center mb-3 group-hover:bg-secondary/50 transition-colors">
+              <Globe className="w-5 h-5 text-secondary" aria-hidden="true" />
+            </div>
+            <h3 className="font-semibold mb-2">Memory System</h3>
+            <p className="text-body text-muted-foreground">
+              Persistent, searchable memory across all agents and sessions with semantic retrieval.
             </p>
           </div>
         </div>
 
         {/* Setup Wizard Reminder */}
-        <div className="mt-8 sm:mt-12 p-4 sm:p-6 rounded-lg bg-primary/5 border border-primary/20 max-w-md mx-auto">
-          <div className="flex gap-3">
-            <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        <div className="p-5 rounded-relaxed bg-primary/5 border border-primary/20 max-w-lg mx-auto">
+          <div className="flex gap-4">
+            <div className="w-10 h-10 rounded-standard bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Zap className="w-5 h-5 text-primary" aria-hidden="true" />
+            </div>
             <div className="text-left">
-              <h3 className="font-semibold text-sm mb-1">Personalize Your Experience</h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Run the setup wizard to add your personal information and preferences for a more tailored AI experience.
+              <h3 className="font-semibold text-sm mb-1">Get Started</h3>
+              <p className="text-caption text-muted-foreground mb-3">
+                Run the setup wizard to configure your AI models and personalize your experience.
               </p>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => router.push('/settings')}
-                className="text-xs h-7"
+                className="text-caption"
               >
-                Open Setup Wizard
+                Open Setup Wizard →
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 text-sm text-muted-foreground">
-          <p className="hidden sm:block">Press <kbd className="px-2 py-1 bg-muted rounded">Ctrl+K</kbd> to open command palette</p>
+        {/* Keyboard Shortcut Hint */}
+        <div className="mt-8 text-body text-muted-foreground">
+          <p className="hidden sm:flex items-center justify-center gap-2">
+            Press 
+            <kbd className="px-2 py-1 bg-muted rounded-standard text-caption font-mono">Ctrl+K</kbd> 
+            to open command palette
+          </p>
         </div>
       </div>
     </div>
